@@ -59,6 +59,15 @@ export function ActionPanel ({ gameState, playerId }) {
       )
     : null
 
+  const selectedCardObj = myPlayer?.hand?.find(c => c.id === selectedCard) || null
+
+  // Auto-set buildIndustry when an industry card is selected
+  useEffect(() => {
+    if (selectedAction === 'build' && selectedCardObj?.type === 'industry') {
+      setBuildIndustry(selectedCardObj.industry)
+    }
+  }, [selectedCard]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Auto-clear buildIndustry if location changes and industry is no longer valid
   useEffect(() => {
     if (buildIndustry && locationTarget) {
@@ -70,8 +79,6 @@ export function ActionPanel ({ gameState, playerId }) {
       if (!allowed.has(buildIndustry)) setBuildIndustry(null)
     }
   }, [locationTarget?.id]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const selectedCardObj = myPlayer?.hand?.find(c => c.id === selectedCard) || null
 
   const handleActionSelect = (actionType) => {
     clearActionError()

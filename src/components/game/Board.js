@@ -77,7 +77,7 @@ function parseConnectionEndpoints (connId) {
 }
 
 export function Board ({ gameState, playerId }) {
-  const { targetingMode, selectedTargets, addTarget } = useGameStore()
+  const { targetingMode, selectedTargets, addTarget, selectedAction, selectedCard } = useGameStore()
   const svgRef = useRef(null)
   const [vb, setVb] = useState({ ...DEFAULT_VB })
   const panRef = useRef({ active: false, hasDragged: false, startX: 0, startY: 0, startVb: null })
@@ -85,6 +85,11 @@ export function Board ({ gameState, playerId }) {
 
   const selectedLocationId = selectedTargets.find(t => t.type === 'location')?.id || null
   const selectedConnectionIds = new Set(selectedTargets.filter(t => t.type === 'connection').map(t => t.id))
+
+  // Compute which locations are valid targets when a card is selected during build
+  const myPlayer = gameState.players.find(p => p.id === playerId)
+  const selectedCardObj = myPlayer?.hand?.find(c => c.id === selectedCard) || null
+  const buildValidLocations = buildValidLocationSet(selectedAction, selectedCardObj, gameState)
 
   const handleLocationClick = useCallback((e, locationId) => {
     if (panRef.current.hasDragged) return
@@ -313,7 +318,8 @@ export function Board ({ gameState, playerId }) {
           const isMerchant = ['shrewsbury', 'gloucester', 'oxford', 'warrington', 'merchantNottingham'].includes(locId)
           const isFarm = locId.startsWith('farmBrewery')
           const isSelected = selectedLocationId === locId
-          const isTargetable = targetingMode === 'location' && !isMerchant
+          const isTargetable = targetingMode === 'location' && !isMerchant &&
+            (!buildValidLocations || buildValidLocations.has(locId))
 
           const boardLoc = gameState.board.locations[locId]
           const tilesHere = gameState.industryTilesOnBoard.filter(t => t.locationId === locId)
@@ -321,16 +327,15 @@ export function Board ({ gameState, playerId }) {
           const r = isSelected ? baseR + 3 : baseR
 
           const slots = boardLoc?.slots || []
-          const emptySlots = slots.filter(s => s.tileId === null)
 
           return (
             <g key={locId}
               onClick={(e) => isTargetable && handleLocationClick(e, locId)}
               className={isTargetable ? 'cursor-pointer' : ''}
             >
-              {/* Transparent hit area for easier clicking */}
+              {/* Transparent hit area covers node + orbital badges */}
               {isTargetable && (
-                <circle cx={pos.x} cy={pos.y} r={baseR + 6} fill="transparent" />
+                <circle cx={pos.x} cy={pos.y} r={baseR + 30} fill="transparent" />
               )}
 
               {/* Selection glow */}
@@ -355,43 +360,54 @@ export function Board ({ gameState, playerId }) {
                 strokeWidth={isSelected ? 2.5 : 1.5}
               />
 
-              {/* Industry slot icons for empty slots */}
-              {!isMerchant && emptySlots.length > 0 && (
+              {/* Industry slot badges arranged orbitally */}
+              {!isMerchant && slots.length > 0 && (
                 <g pointerEvents="none">
-                  {emptySlots.map((slot, idx) => {
-                    const totalEmpty = emptySlots.length
-                    const slotWidth = Math.min(12, 40 / Math.max(totalEmpty, 1))
-                    const totalWidth = totalEmpty * slotWidth
-                    const sx = pos.x - totalWidth / 2 + idx * slotWidth + slotWidth / 2
-                    const sy = pos.y - r - 8
+                  {slots.map((slot, idx) => {
+                    const total = slots.length
+                    const spreadDeg = total === 1 ? 0 : total === 2 ? 60 : total === 3 ? 55 : 42
+                    const startDeg = -90 - spreadDeg * (total - 1) / 2
+                    const angleDeg = startDeg + idx * spreadDeg
+                    const angleRad = angleDeg * Math.PI / 180
+                    const orbitR = baseR + 20
+                    const cx = pos.x + Math.cos(angleRad) * orbitR
+                    const cy = pos.y + Math.sin(angleRad) * orbitR
+
+                    const isOccupied = slot.tileId !== null
+                    if (isOccupied) return null
 
                     const industries = slot.allowedIndustries || []
+                    if (industries.length === 0) return null
 
                     if (industries.length === 1) {
+                      const ind = industries[0]
                       return (
                         <g key={`slot-${locId}-${idx}`}>
-                          <circle cx={sx} cy={sy} r={5} fill={INDUSTRY_COLORS[industries[0]] || '#555'} stroke="#44403c" strokeWidth={0.5} />
-                          <text x={sx} y={sy + 0.5} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="5" fontWeight="bold">
-                            {INDUSTRY_LETTERS[industries[0]] || '?'}
+                          <circle cx={cx} cy={cy} r={9} fill={INDUSTRY_COLORS[ind] || '#555'} stroke="#1c1917" strokeWidth={1.5} />
+                          <text x={cx} y={cy + 0.5} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="8" fontWeight="bold">
+                            {INDUSTRY_LETTERS[ind] || '?'}
                           </text>
                         </g>
                       )
                     }
 
+                    // Two-industry split badge
+                    const [ind0, ind1] = industries
                     return (
                       <g key={`slot-${locId}-${idx}`}>
-                        <rect x={sx - 5.5} y={sy - 5} width={11} height={10} rx={2} fill="#292524" stroke="#44403c" strokeWidth={0.5} />
-                        {industries.map((ind, j) => {
-                          const ix = sx - 3 + j * 6
-                          return (
-                            <g key={`${locId}-${idx}-${j}`}>
-                              <circle cx={ix} cy={sy} r={3.5} fill={INDUSTRY_COLORS[ind] || '#555'} />
-                              <text x={ix} y={sy + 0.5} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="4" fontWeight="bold">
-                                {INDUSTRY_LETTERS[ind] || '?'}
-                              </text>
-                            </g>
-                          )
-                        })}
+                        <circle cx={cx} cy={cy} r={9} fill={INDUSTRY_COLORS[ind0] || '#555'} stroke="#1c1917" strokeWidth={1.5} />
+                        <path
+                          d={`M ${cx} ${cy - 9} A 9 9 0 0 1 ${cx} ${cy + 9} Z`}
+                          fill={INDUSTRY_COLORS[ind1] || '#555'}
+                        />
+                        <line x1={cx} y1={cy - 9} x2={cx} y2={cy + 9} stroke="#1c1917" strokeWidth={1} />
+                        <circle cx={cx} cy={cy} r={9} fill="none" stroke="#1c1917" strokeWidth={1.5} />
+                        <text x={cx - 4} y={cy + 0.5} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="6" fontWeight="bold">
+                          {INDUSTRY_LETTERS[ind0] || '?'}
+                        </text>
+                        <text x={cx + 4} y={cy + 0.5} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="6" fontWeight="bold">
+                          {INDUSTRY_LETTERS[ind1] || '?'}
+                        </text>
                       </g>
                     )
                   })}
@@ -498,6 +514,28 @@ export function Board ({ gameState, playerId }) {
       </div>
     </div>
   )
+}
+
+function buildValidLocationSet (selectedAction, cardObj, gameState) {
+  if (selectedAction !== 'build' || !cardObj) return null
+  if (cardObj.type === 'wildLocation' || cardObj.type === 'wildIndustry') return null
+
+  if (cardObj.type === 'location') {
+    return new Set([cardObj.locationId])
+  }
+
+  if (cardObj.type === 'industry') {
+    const valid = new Set()
+    for (const [locId, boardLoc] of Object.entries(gameState.board.locations)) {
+      const hasSlot = boardLoc.slots.some(
+        s => s.tileId === null && (s.allowedIndustries || []).includes(cardObj.industry)
+      )
+      if (hasSlot) valid.add(locId)
+    }
+    return valid
+  }
+
+  return null
 }
 
 function formatLocationName (id) {
