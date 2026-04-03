@@ -127,7 +127,9 @@ function executeBuild (state, playerId, { cardId, locationId, industry }) {
   }
 
   newState.industryTilesOnBoard.push(boardTile)
+  const existingSlot = newState.board.locations[locationId].slots[slotIndex]
   newState.board.locations[locationId].slots[slotIndex] = {
+    ...existingSlot,
     tileId: tile.id,
     ownerId: playerId,
   }

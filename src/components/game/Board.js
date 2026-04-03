@@ -62,6 +62,7 @@ const INDUSTRY_LETTERS = {
 const DEFAULT_VB = { x: -20, y: -20, w: 660, h: 720 }
 const MIN_ZOOM = 0.25
 const MAX_ZOOM = 4
+const DRAG_THRESHOLD = 4
 
 function parseConnectionEndpoints (connId) {
   const knownLocations = Object.keys(LOCATION_POSITIONS)
@@ -79,23 +80,29 @@ export function Board ({ gameState, playerId }) {
   const { targetingMode, selectedTargets, addTarget } = useGameStore()
   const svgRef = useRef(null)
   const [vb, setVb] = useState({ ...DEFAULT_VB })
-  const panState = useRef({ isPanning: false, startX: 0, startY: 0, startVb: null })
-  const pinchState = useRef({ dist: 0, midX: 0, midY: 0 })
+  const panRef = useRef({ active: false, hasDragged: false, startX: 0, startY: 0, startVb: null })
+  const pinchRef = useRef({ dist: 0 })
 
   const selectedLocationId = selectedTargets.find(t => t.type === 'location')?.id || null
   const selectedConnectionIds = new Set(selectedTargets.filter(t => t.type === 'connection').map(t => t.id))
 
-  const handleLocationClick = (locationId) => {
+  const handleLocationClick = useCallback((e, locationId) => {
+    if (panRef.current.hasDragged) return
+    e.stopPropagation()
+    console.log('[Board] Location clicked:', locationId, 'targetingMode:', targetingMode)
     if (targetingMode === 'location') {
       addTarget({ type: 'location', id: locationId })
     }
-  }
+  }, [targetingMode, addTarget])
 
-  const handleConnectionClick = (connId) => {
+  const handleConnectionClick = useCallback((e, connId) => {
+    if (panRef.current.hasDragged) return
+    e.stopPropagation()
+    console.log('[Board] Connection clicked:', connId, 'targetingMode:', targetingMode)
     if (targetingMode === 'connection') {
       addTarget({ type: 'connection', id: connId })
     }
-  }
+  }, [targetingMode, addTarget])
 
   const screenToSvg = useCallback((clientX, clientY) => {
     const svg = svgRef.current
@@ -125,38 +132,46 @@ export function Board ({ gameState, playerId }) {
     })
   }, [screenToSvg])
 
-  const handlePointerDown = useCallback((e) => {
+  const handleMouseDown = useCallback((e) => {
     if (e.button !== 0) return
-    panState.current = { isPanning: true, startX: e.clientX, startY: e.clientY, startVb: { ...vb } }
-    e.currentTarget.setPointerCapture(e.pointerId)
+    panRef.current = { active: true, hasDragged: false, startX: e.clientX, startY: e.clientY, startVb: { ...vb } }
   }, [vb])
 
-  const handlePointerMove = useCallback((e) => {
-    if (!panState.current.isPanning) return
+  const handleMouseMove = useCallback((e) => {
+    const pan = panRef.current
+    if (!pan.active) return
+
+    const dx = e.clientX - pan.startX
+    const dy = e.clientY - pan.startY
+
+    if (!pan.hasDragged && Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return
+    pan.hasDragged = true
+
     const svg = svgRef.current
     if (!svg) return
     const rect = svg.getBoundingClientRect()
-    const { startX, startY, startVb } = panState.current
-    const dx = (e.clientX - startX) / rect.width * startVb.w
-    const dy = (e.clientY - startY) / rect.height * startVb.h
-    setVb({ x: startVb.x - dx, y: startVb.y - dy, w: startVb.w, h: startVb.h })
+    const svgDx = dx / rect.width * pan.startVb.w
+    const svgDy = dy / rect.height * pan.startVb.h
+    setVb({ x: pan.startVb.x - svgDx, y: pan.startVb.y - svgDy, w: pan.startVb.w, h: pan.startVb.h })
   }, [])
 
-  const handlePointerUp = useCallback(() => {
-    panState.current.isPanning = false
+  const handleMouseUp = useCallback(() => {
+    setTimeout(() => { panRef.current.active = false }, 0)
   }, [])
 
   const handleTouchStart = useCallback((e) => {
     if (e.touches.length === 2) {
       const dx = e.touches[0].clientX - e.touches[1].clientX
       const dy = e.touches[0].clientY - e.touches[1].clientY
-      pinchState.current = {
-        dist: Math.sqrt(dx * dx + dy * dy),
-        midX: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-        midY: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+      pinchRef.current = { dist: Math.sqrt(dx * dx + dy * dy) }
+    } else if (e.touches.length === 1) {
+      panRef.current = {
+        active: true, hasDragged: false,
+        startX: e.touches[0].clientX, startY: e.touches[0].clientY,
+        startVb: { ...vb },
       }
     }
-  }, [])
+  }, [vb])
 
   const handleTouchMove = useCallback((e) => {
     if (e.touches.length === 2) {
@@ -164,7 +179,7 @@ export function Board ({ gameState, playerId }) {
       const dx = e.touches[0].clientX - e.touches[1].clientX
       const dy = e.touches[0].clientY - e.touches[1].clientY
       const newDist = Math.sqrt(dx * dx + dy * dy)
-      const scale = pinchState.current.dist / newDist
+      const scale = pinchRef.current.dist / newDist
       const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2
       const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2
       const svgPt = screenToSvg(midX, midY)
@@ -181,17 +196,33 @@ export function Board ({ gameState, playerId }) {
           h: newH,
         }
       })
+      pinchRef.current.dist = newDist
+    } else if (e.touches.length === 1 && panRef.current.active) {
+      const pan = panRef.current
+      const dx = e.touches[0].clientX - pan.startX
+      const dy = e.touches[0].clientY - pan.startY
+      if (!pan.hasDragged && Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return
+      pan.hasDragged = true
 
-      pinchState.current.dist = newDist
+      const svg = svgRef.current
+      if (!svg) return
+      const rect = svg.getBoundingClientRect()
+      const svgDx = dx / rect.width * pan.startVb.w
+      const svgDy = dy / rect.height * pan.startVb.h
+      setVb({ x: pan.startVb.x - svgDx, y: pan.startVb.y - svgDy, w: pan.startVb.w, h: pan.startVb.h })
     }
   }, [screenToSvg])
+
+  const handleTouchEnd = useCallback(() => {
+    setTimeout(() => { panRef.current.active = false }, 0)
+  }, [])
 
   useEffect(() => {
     const svg = svgRef.current
     if (!svg) return
-    const handler = (e) => e.preventDefault()
-    svg.addEventListener('wheel', handler, { passive: false })
-    return () => svg.removeEventListener('wheel', handler)
+    const prevent = (e) => e.preventDefault()
+    svg.addEventListener('wheel', prevent, { passive: false })
+    return () => svg.removeEventListener('wheel', prevent)
   }, [])
 
   const resetView = useCallback(() => setVb({ ...DEFAULT_VB }), [])
@@ -204,14 +235,15 @@ export function Board ({ gameState, playerId }) {
         ref={svgRef}
         viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
         className="w-full h-full"
-        style={{ touchAction: 'none' }}
+        style={{ touchAction: 'none', cursor: panRef.current.hasDragged ? 'grabbing' : 'default' }}
         onWheel={handleWheel}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         <rect x={vb.x - 500} y={vb.y - 500} width={vb.w + 1000} height={vb.h + 1000} fill="#1c1917" />
 
@@ -252,7 +284,7 @@ export function Board ({ gameState, playerId }) {
                   x2={toPos.x + nx} y2={toPos.y + ny}
                   stroke="transparent" strokeWidth={16}
                   className="cursor-pointer"
-                  onClick={(e) => { e.stopPropagation(); handleConnectionClick(connId) }}
+                  onClick={(e) => handleConnectionClick(e, connId)}
                 />
               )}
               <line
@@ -293,9 +325,14 @@ export function Board ({ gameState, playerId }) {
 
           return (
             <g key={locId}
-              onClick={(e) => { if (isTargetable) { e.stopPropagation(); handleLocationClick(locId) } }}
+              onClick={(e) => isTargetable && handleLocationClick(e, locId)}
               className={isTargetable ? 'cursor-pointer' : ''}
             >
+              {/* Transparent hit area for easier clicking */}
+              {isTargetable && (
+                <circle cx={pos.x} cy={pos.y} r={baseR + 6} fill="transparent" />
+              )}
+
               {/* Selection glow */}
               {isSelected && (
                 <circle cx={pos.x} cy={pos.y} r={r + 4} fill="none" stroke="#f59e0b" strokeWidth={2} opacity={0.8}>
@@ -305,7 +342,9 @@ export function Board ({ gameState, playerId }) {
 
               {/* Targetable hint ring */}
               {isTargetable && !isSelected && (
-                <circle cx={pos.x} cy={pos.y} r={baseR + 4} fill="none" stroke="#78716c" strokeWidth={1} strokeDasharray="3 3" opacity={0.5} />
+                <circle cx={pos.x} cy={pos.y} r={baseR + 4} fill="none" stroke="#10b981" strokeWidth={2} strokeDasharray="3 3" opacity={0.8}>
+                  <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite" />
+                </circle>
               )}
 
               {/* Main circle */}

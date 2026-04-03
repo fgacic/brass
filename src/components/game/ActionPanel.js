@@ -44,8 +44,13 @@ export function ActionPanel ({ gameState, playerId }) {
   const [buildIndustry, setBuildIndustry] = useState(null)
   const [developIndustries, setDevelopIndustries] = useState([])
   const [sellTiles, setSellTiles] = useState([])
+  const [showDebug, setShowDebug] = useState(false)
 
   const myPlayer = gameState.players.find(p => p.id === playerId)
+  const locationTarget = selectedTargets.find(t => t.type === 'location')
+  const connectionTargets = selectedTargets.filter(t => t.type === 'connection')
+
+  const selectedCardObj = myPlayer?.hand?.find(c => c.id === selectedCard) || null
 
   const handleActionSelect = (actionType) => {
     clearActionError()
@@ -80,8 +85,7 @@ export function ActionPanel ({ gameState, playerId }) {
     switch (selectedAction) {
       case 'build': {
         if (!buildIndustry) missing.push('pick an industry')
-        const locTarget = selectedTargets.find(t => t.type === 'location')
-        if (!locTarget) missing.push('click a location on the map')
+        if (!locationTarget) missing.push('click a location on the map')
         break
       }
       case 'network': {
@@ -102,6 +106,30 @@ export function ActionPanel ({ gameState, playerId }) {
     return missing
   }
 
+  const buildPayload = () => {
+    switch (selectedAction) {
+      case 'build':
+        return { cardId: selectedCard, locationId: locationTarget?.id, industry: buildIndustry }
+      case 'network':
+        return { cardId: selectedCard, connectionIds: connectionTargets.map(t => t.id) }
+      case 'develop':
+        return { cardId: selectedCard, industries: developIndustries }
+      case 'sell':
+        return { cardId: selectedCard, tileSells: sellTiles }
+      case 'loan':
+        return { cardId: selectedCard }
+      case 'scout': {
+        const hand = myPlayer?.hand || []
+        const otherCards = hand.filter(c => c.id !== selectedCard).slice(0, 2)
+        return { cardId: selectedCard, discardCardIds: otherCards.map(c => c.id) }
+      }
+      case 'pass':
+        return { cardId: selectedCard }
+      default:
+        return {}
+    }
+  }
+
   const handleConfirm = () => {
     const missing = getMissingSteps()
     if (missing.length > 0) {
@@ -109,53 +137,55 @@ export function ActionPanel ({ gameState, playerId }) {
       return
     }
 
+    const payload = buildPayload()
+    console.log('[ActionPanel] Confirming:', selectedAction, JSON.stringify(payload))
+
     switch (selectedAction) {
-      case 'build': {
-        const target = selectedTargets.find(t => t.type === 'location')
-        build(selectedCard, target.id, buildIndustry)
+      case 'build':
+        build(payload.cardId, payload.locationId, payload.industry)
         break
-      }
-      case 'network': {
-        const conns = selectedTargets.filter(t => t.type === 'connection').map(t => t.id)
-        network(selectedCard, conns)
+      case 'network':
+        network(payload.cardId, payload.connectionIds)
         break
-      }
       case 'develop':
-        develop(selectedCard, developIndustries)
+        develop(payload.cardId, payload.industries)
         break
       case 'sell':
-        sell(selectedCard, sellTiles)
+        sell(payload.cardId, payload.tileSells)
         break
       case 'loan':
-        loan(selectedCard)
+        loan(payload.cardId)
         break
-      case 'scout': {
-        const hand = myPlayer?.hand || []
-        const otherCards = hand.filter(c => c.id !== selectedCard).slice(0, 2)
-        scout(selectedCard, otherCards.map(c => c.id))
+      case 'scout':
+        scout(payload.cardId, payload.discardCardIds)
         break
-      }
       case 'pass':
-        pass(selectedCard)
+        pass(payload.cardId)
         break
     }
   }
 
-  const locationTarget = selectedTargets.find(t => t.type === 'location')
-  const connectionTargets = selectedTargets.filter(t => t.type === 'connection')
   const isReady = getMissingSteps().length === 0
 
   return (
     <div className="px-4 py-2 space-y-2">
       {actionError && (
-        <div className="text-xs text-red-400 bg-red-900/30 px-3 py-1.5 rounded">
+        <div className="text-xs text-red-400 bg-red-900/30 px-3 py-1.5 rounded border border-red-800">
           {actionError}
         </div>
       )}
 
       {!selectedAction ? (
         <div className="space-y-1">
-          <p className="text-xs text-stone-400">Choose an action:</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-stone-400">Choose an action:</p>
+            <button
+              onClick={() => setShowDebug(!showDebug)}
+              className="text-[10px] px-1.5 py-0.5 text-stone-500 hover:text-stone-300 bg-stone-800 rounded"
+            >
+              {showDebug ? 'Hide Debug' : 'Debug'}
+            </button>
+          </div>
           <div className="flex gap-1.5 flex-wrap">
             {ACTIONS.map(a => (
               <button
@@ -179,7 +209,9 @@ export function ActionPanel ({ gameState, playerId }) {
             <span className="text-stone-600">|</span>
 
             {selectedCard ? (
-              <span className="text-xs text-green-400">Card selected</span>
+              <span className="text-xs text-green-400">
+                Card: {selectedCardObj?.locationName || selectedCardObj?.industry || selectedCard}
+              </span>
             ) : (
               <span className="text-xs text-yellow-500 animate-pulse">Click a card below</span>
             )}
@@ -187,12 +219,22 @@ export function ActionPanel ({ gameState, playerId }) {
             {selectedAction === 'build' && (
               <>
                 <span className="text-stone-600">|</span>
+                {buildIndustry ? (
+                  <>
+                    <span className="text-xs text-green-400">
+                      {INDUSTRY_LABELS[buildIndustry] || buildIndustry}
+                    </span>
+                    <span className="text-stone-600">|</span>
+                  </>
+                ) : (
+                  <span className="text-xs text-yellow-500 animate-pulse">Pick industry below</span>
+                )}
                 {locationTarget ? (
                   <span className="text-xs text-green-400">
                     {formatLocName(locationTarget.id)}
                   </span>
                 ) : (
-                  <span className="text-xs text-yellow-500">Click a location on map</span>
+                  <span className="text-xs text-yellow-500 animate-pulse">Click a location on map</span>
                 )}
               </>
             )}
@@ -209,6 +251,13 @@ export function ActionPanel ({ gameState, playerId }) {
                 )}
               </>
             )}
+
+            <button
+              onClick={() => setShowDebug(!showDebug)}
+              className="ml-auto text-[10px] px-1.5 py-0.5 text-stone-500 hover:text-stone-300 bg-stone-800 rounded"
+            >
+              {showDebug ? 'Hide' : 'Debug'}
+            </button>
           </div>
 
           {selectedAction === 'build' && (
@@ -332,6 +381,60 @@ export function ActionPanel ({ gameState, playerId }) {
               </span>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Debug overlay */}
+      {showDebug && (
+        <div className="mt-2 p-2 bg-stone-950 border border-stone-700 rounded text-[10px] font-mono text-stone-400 space-y-1 max-h-48 overflow-auto">
+          <div className="text-stone-500 font-bold mb-1">-- DEBUG --</div>
+          <div>action: <span className="text-amber-400">{selectedAction || 'none'}</span></div>
+          <div>targetingMode: <span className="text-cyan-400">{useGameStore.getState().targetingMode || 'none'}</span></div>
+          <div>selectedCard: <span className="text-green-400">{selectedCard || 'none'}</span></div>
+          {selectedCardObj && (
+            <div>card details: <span className="text-green-300">
+              type={selectedCardObj.type}
+              {selectedCardObj.locationId && ` loc=${selectedCardObj.locationId}`}
+              {selectedCardObj.locationName && ` name=${selectedCardObj.locationName}`}
+              {selectedCardObj.industry && ` ind=${selectedCardObj.industry}`}
+            </span></div>
+          )}
+          <div>buildIndustry: <span className="text-purple-400">{buildIndustry || 'none'}</span></div>
+          <div>targets: <span className="text-blue-400">
+            {selectedTargets.length === 0 ? 'none' : selectedTargets.map(t => `${t.type}:${t.id}`).join(', ')}
+          </span></div>
+          <div>locationTarget: <span className="text-blue-300">{locationTarget?.id || 'none'}</span></div>
+          {selectedAction && (
+            <div>payload: <span className="text-yellow-300">{JSON.stringify(buildPayload())}</span></div>
+          )}
+          {selectedAction && (
+            <div>missing: <span className={getMissingSteps().length ? 'text-red-400' : 'text-green-400'}>
+              {getMissingSteps().length ? getMissingSteps().join(', ') : 'READY'}
+            </span></div>
+          )}
+          <div>actionsRemaining: <span className="text-stone-300">{myPlayer?.actionsRemaining}</span></div>
+          <div>money: <span className="text-stone-300">£{myPlayer?.money}</span></div>
+          {actionError && <div>lastError: <span className="text-red-400">{actionError}</span></div>}
+          {selectedAction === 'build' && locationTarget && buildIndustry && (
+            <div>
+              slotCheck: <span className="text-orange-400">
+                {(() => {
+                  const loc = gameState.board.locations[locationTarget.id]
+                  if (!loc) return 'location not found in board'
+                  const emptySlot = loc.slots.find(s =>
+                    s.tileId === null && s.allowedIndustries?.includes(buildIndustry)
+                  )
+                  if (emptySlot) return `OK - slot accepts ${buildIndustry}`
+                  const anyEmpty = loc.slots.some(s => s.tileId === null)
+                  if (!anyEmpty) return 'all slots occupied'
+                  const allowed = loc.slots
+                    .filter(s => s.tileId === null)
+                    .map(s => (s.allowedIndustries || []).join('/'))
+                  return `no slot for ${buildIndustry}, available: [${allowed.join('], [')}]`
+                })()}
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>

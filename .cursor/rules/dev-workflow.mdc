@@ -1,0 +1,10 @@
+---
+description: Dev server workflow - never run builds manually
+alwaysApply: true
+---
+
+# Dev Workflow
+
+- `yarn dev` is always running. Do NOT run `next build`, `yarn build`, or restart the dev server.
+- After editing files, the dev server picks up changes automatically via HMR.
+- To check for errors, use `ReadLints` on edited files instead of running a build.
