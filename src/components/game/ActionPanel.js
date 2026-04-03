@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useGameStore } from '@/store/gameStore'
 import { useGameActions } from '@/hooks/useGameActions'
 
@@ -49,6 +49,27 @@ export function ActionPanel ({ gameState, playerId }) {
   const myPlayer = gameState.players.find(p => p.id === playerId)
   const locationTarget = selectedTargets.find(t => t.type === 'location')
   const connectionTargets = selectedTargets.filter(t => t.type === 'connection')
+
+  // Industries allowed by the selected location's empty slots
+  const locationAllowedIndustries = locationTarget
+    ? new Set(
+        (gameState.board.locations[locationTarget.id]?.slots || [])
+          .filter(s => s.tileId === null)
+          .flatMap(s => s.allowedIndustries || [])
+      )
+    : null
+
+  // Auto-clear buildIndustry if location changes and industry is no longer valid
+  useEffect(() => {
+    if (buildIndustry && locationTarget) {
+      const allowed = new Set(
+        (gameState.board.locations[locationTarget.id]?.slots || [])
+          .filter(s => s.tileId === null)
+          .flatMap(s => s.allowedIndustries || [])
+      )
+      if (!allowed.has(buildIndustry)) setBuildIndustry(null)
+    }
+  }, [locationTarget?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedCardObj = myPlayer?.hand?.find(c => c.id === selectedCard) || null
 
@@ -261,28 +282,38 @@ export function ActionPanel ({ gameState, playerId }) {
           </div>
 
           {selectedAction === 'build' && (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-xs text-stone-400 mr-1">Industry:</span>
+              {locationAllowedIndustries && locationAllowedIndustries.size === 0 && (
+                <span className="text-xs text-red-400">No empty slots at this location</span>
+              )}
               {Object.entries(INDUSTRY_LABELS).map(([ind, label]) => {
                 const tiles = myPlayer?.playerMat?.[ind]
-                const hasAvailable = tiles && tiles.length > 0
+                const hasTiles = tiles && tiles.length > 0
+                const allowedHere = !locationAllowedIndustries || locationAllowedIndustries.has(ind)
+                const isEnabled = hasTiles && allowedHere
+                if (locationAllowedIndustries && !allowedHere) return null
                 return (
                   <button
                     key={ind}
                     onClick={() => setBuildIndustry(ind)}
-                    disabled={!hasAvailable}
+                    disabled={!isEnabled}
                     className={`px-2 py-1 rounded text-xs transition-colors ${
                       buildIndustry === ind
                         ? 'bg-amber-600 text-white ring-1 ring-amber-400'
-                        : hasAvailable
+                        : isEnabled
                           ? 'bg-stone-700 text-stone-300 hover:bg-stone-600'
                           : 'bg-stone-800 text-stone-600 cursor-not-allowed'
                     }`}
                   >
                     {label}
+                    {!hasTiles && <span className="ml-1 text-stone-500">(none)</span>}
                   </button>
                 )
               })}
+              {!locationAllowedIndustries && (
+                <span className="text-xs text-stone-500 italic">select a location first to filter</span>
+              )}
             </div>
           )}
 
