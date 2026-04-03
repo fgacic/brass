@@ -298,8 +298,10 @@ export function ActionPanel ({ gameState, playerId }) {
                 const tiles = myPlayer?.playerMat?.[ind]
                 const hasTiles = tiles && tiles.length > 0
                 const allowedHere = !locationAllowedIndustries || locationAllowedIndustries.has(ind)
-                const isEnabled = hasTiles && allowedHere
+                const allowedByCard = !selectedCardObj || selectedCardObj.type !== 'industry' || selectedCardObj.industry === ind
+                const isEnabled = hasTiles && allowedHere && allowedByCard
                 if (locationAllowedIndustries && !allowedHere) return null
+                if (selectedCardObj?.type === 'industry' && !allowedByCard) return null
                 return (
                   <button
                     key={ind}
