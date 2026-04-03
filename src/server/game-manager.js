@@ -23,9 +23,14 @@ function handleAction (roomCode, playerId, actionType, payload) {
   if (!room.gameState) return { error: 'Game not started' }
   if (room.gameState.phase === PHASE.GAME_OVER) return { error: 'Game is over' }
 
+  console.log(`[Action] ${playerId} -> ${actionType}`, JSON.stringify(payload))
+
   const result = processAction(room.gameState, playerId, actionType, payload)
 
-  if (result.error) return { error: result.error }
+  if (result.error) {
+    console.log(`[Action Error] ${result.error}`)
+    return { error: result.error }
+  }
 
   let newState = result.state
 

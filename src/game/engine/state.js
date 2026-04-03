@@ -15,7 +15,7 @@ function createInitialState (roomId, players) {
   for (const [id, loc] of Object.entries(locations)) {
     if (loc.type === 'merchant') continue
     boardLocations[id] = {
-      slots: loc.industrySlots.map(() => ({ tileId: null, ownerId: null })),
+      slots: loc.industrySlots.map(s => ({ tileId: null, ownerId: null, allowedIndustries: s.allowedIndustries })),
     }
   }
 

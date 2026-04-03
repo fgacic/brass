@@ -12,7 +12,8 @@ const INDUSTRY_LABELS = {
 }
 
 export function Hand ({ cards, playerId }) {
-  const { selectedCard, setSelectedCard } = useGameStore()
+  const { selectedCard, setSelectedCard, selectedAction } = useGameStore()
+  const needsCard = selectedAction && !selectedCard
 
   if (!cards || cards.length === 0) {
     return (
@@ -23,7 +24,12 @@ export function Hand ({ cards, playerId }) {
   }
 
   return (
-    <div className="px-4 py-2">
+    <div className={`px-4 py-2 transition-colors ${needsCard ? 'bg-amber-900/20' : ''}`}>
+      {needsCard && (
+        <p className="text-xs text-amber-400 mb-1 animate-pulse">
+          Select a card to use for this action:
+        </p>
+      )}
       <div className="flex gap-1.5 overflow-x-auto pb-1">
         {cards.map(card => {
           const isSelected = selectedCard === card.id
@@ -31,10 +37,12 @@ export function Hand ({ cards, playerId }) {
             <button
               key={card.id}
               onClick={() => setSelectedCard(isSelected ? null : card.id)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded text-xs font-medium transition-all ${
+              className={`flex-shrink-0 px-3 py-2 rounded text-xs font-medium transition-all border ${
                 isSelected
-                  ? 'bg-amber-600 text-white ring-2 ring-amber-400 -translate-y-1'
-                  : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+                  ? 'bg-amber-600 text-white border-amber-400 -translate-y-1 shadow-lg shadow-amber-900/50'
+                  : needsCard
+                    ? 'bg-stone-700 text-stone-200 border-amber-700/50 hover:bg-stone-600 hover:border-amber-500'
+                    : 'bg-stone-700 text-stone-300 border-stone-600 hover:bg-stone-600'
               }`}
             >
               {card.type === 'location' && (

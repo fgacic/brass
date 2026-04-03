@@ -80,18 +80,23 @@ function registerSocketHandlers (io) {
 
     socket.on('game:action', ({ actionType, payload }, callback) => {
       if (!currentRoomCode || !currentPlayerId) {
-        callback({ success: false, error: 'Not in a game' })
+        if (callback) callback({ success: false, error: 'Not in a game' })
         return
       }
 
-      const result = handleAction(currentRoomCode, currentPlayerId, actionType, payload)
-      if (result.error) {
-        callback({ success: false, error: result.error })
-        return
-      }
+      try {
+        const result = handleAction(currentRoomCode, currentPlayerId, actionType, payload)
+        if (result.error) {
+          if (callback) callback({ success: false, error: result.error })
+          return
+        }
 
-      broadcastGameState(io, currentRoomCode, result.gameState)
-      callback({ success: true })
+        broadcastGameState(io, currentRoomCode, result.gameState)
+        if (callback) callback({ success: true })
+      } catch (err) {
+        console.error('[game:action] Exception:', err)
+        if (callback) callback({ success: false, error: err.message || 'Server error' })
+      }
     })
 
     socket.on('room:reconnect', ({ roomCode, playerId }, callback) => {

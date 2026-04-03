@@ -5,18 +5,21 @@ import { getSocket } from '@/lib/socket'
 import { useGameStore } from '@/store/gameStore'
 
 export function useGameActions () {
-  const { setActionError, resetAction } = useGameStore()
-
   const sendAction = useCallback((actionType, payload) => {
     const socket = getSocket()
+    const { setActionError, resetAction } = useGameStore.getState()
+
+    console.log('[Client] Sending action:', actionType, payload)
+
     socket.emit('game:action', { actionType, payload }, (response) => {
-      if (response.success) {
+      console.log('[Client] Action response:', response)
+      if (response && response.success) {
         resetAction()
       } else {
-        setActionError(response.error)
+        setActionError(response?.error || 'Unknown error')
       }
     })
-  }, [setActionError, resetAction])
+  }, [])
 
   const build = useCallback((cardId, locationId, industry) => {
     sendAction('build', { cardId, locationId, industry })
