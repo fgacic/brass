@@ -19,7 +19,7 @@ const merchantLocations = [
   { locationId: 'gloucester', minPlayers: 2, bonusType: 'develop', bonusValue: 1 },
   { locationId: 'oxford', minPlayers: 2, bonusType: 'income', bonusValue: 2 },
   { locationId: 'warrington', minPlayers: 2, bonusType: 'money', bonusValue: 5 },
-  { locationId: 'merchantNottingham', minPlayers: 4, bonusType: 'vp', bonusValue: 4 },
+  { locationId: 'nottingham', minPlayers: 4, bonusType: 'vp', bonusValue: 4 },
 ]
 
 function getActiveMerchantLocations (playerCount) {

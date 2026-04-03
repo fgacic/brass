@@ -47,7 +47,7 @@ const LOCATION_TYPE = {
   FARM_BREWERY: 'farmBrewery',
 }
 
-const PLAYER_COLORS = ['red', 'yellow', 'purple', 'white']
+const PLAYER_COLORS = ['red', 'blue', 'yellow', 'purple']
 
 const ROUNDS_PER_ERA = { 2: 10, 3: 9, 4: 8 }
 const STARTING_MONEY = 17

@@ -23,7 +23,7 @@ function consumeCoal (state, locationId, amount) {
   }
 
   if (remaining > 0) {
-    const merchantLocations = ['shrewsbury', 'gloucester', 'oxford', 'warrington', 'merchantNottingham']
+    const merchantLocations = ['shrewsbury', 'gloucester', 'oxford', 'warrington', 'nottingham']
     const isConnectedToMarket = merchantLocations.some(
       ml => areConnected(state.board.links, state.era, locationId, ml)
     )
@@ -145,7 +145,7 @@ function canAffordCoal (state, locationId, amount) {
   if (freeCoal >= amount) return { possible: true, cost: 0 }
 
   const marketNeeded = amount - freeCoal
-  const merchantLocations = ['shrewsbury', 'gloucester', 'oxford', 'warrington', 'merchantNottingham']
+  const merchantLocations = ['shrewsbury', 'gloucester', 'oxford', 'warrington', 'nottingham']
   const isConnectedToMarket = merchantLocations.some(
     ml => areConnected(state.board.links, state.era, locationId, ml)
   )
@@ -227,7 +227,7 @@ function moveCubesToMarket (state, tile) {
       moneyEarned += price
     }
   } else if (tile.industry === 'coalMine') {
-    const merchantLocations = ['shrewsbury', 'gloucester', 'oxford', 'warrington', 'merchantNottingham']
+    const merchantLocations = ['shrewsbury', 'gloucester', 'oxford', 'warrington', 'nottingham']
     const isConnectedToMarket = merchantLocations.some(
       ml => areConnected(state.board.links, state.era, tile.locationId, ml)
     )

@@ -44,6 +44,6 @@ export function TurnInfo ({ gameState, playerId }) {
 }
 
 function getPlayerColor (color) {
-  const map = { red: 'red-500', yellow: 'yellow-500', purple: 'purple-500', white: 'white' }
+  const map = { red: 'red-500', blue: 'blue-500', yellow: 'yellow-500', purple: 'purple-500' }
   return map[color] || 'stone-400'
 }

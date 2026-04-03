@@ -29,7 +29,7 @@ function formatLocName (id) {
     stokeOnTrent: 'Stoke-on-Trent', burtonOnTrent: 'Burton-on-Trent',
     coalbrookdale: 'Coalbrookdale', wolverhampton: 'Wolverhampton',
     kidderminster: 'Kidderminster', farmBrewery1: 'Farm Brewery',
-    farmBrewery2: 'Farm Brewery', merchantNottingham: 'Nottingham Merchant',
+    farmBrewery2: 'Farm Brewery',
   }
   return names[id] || id.charAt(0).toUpperCase() + id.slice(1)
 }
@@ -118,7 +118,7 @@ export function ActionPanel ({ gameState, playerId }) {
       }
       case 'network': {
         const conns = selectedTargets.filter(t => t.type === 'connection')
-        if (conns.length === 0) missing.push('click a connection on the map')
+        if (conns.length === 0) missing.push('click a link on the map')
         break
       }
       case 'develop':
@@ -271,11 +271,9 @@ export function ActionPanel ({ gameState, playerId }) {
               <>
                 <span className="text-stone-600">|</span>
                 {connectionTargets.length > 0 ? (
-                  <span className="text-xs text-green-400">
-                    {connectionTargets.length} link{connectionTargets.length !== 1 ? 's' : ''} selected
-                  </span>
+                  <span className="text-xs text-green-400">Link selected</span>
                 ) : (
-                  <span className="text-xs text-yellow-500">Click a route on map</span>
+                  <span className="text-xs text-yellow-500 animate-pulse">Click a link on map</span>
                 )}
               </>
             )}

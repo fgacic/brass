@@ -27,8 +27,8 @@ export const useGameStore = create((set, get) => ({
     if (existing) {
       return { selectedTargets: s.selectedTargets.filter(t => t.id !== target.id) }
     }
-    if (target.type === 'location') {
-      return { selectedTargets: [target, ...s.selectedTargets.filter(t => t.type !== 'location')] }
+    if (target.type === 'location' || target.type === 'connection') {
+      return { selectedTargets: [target, ...s.selectedTargets.filter(t => t.type !== target.type)] }
     }
     return { selectedTargets: [...s.selectedTargets, target] }
   }),

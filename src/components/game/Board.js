@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { useGameStore } from '@/store/gameStore'
 
 const LOCATION_POSITIONS = {
-  leek: { x: 340, y: 40 },
+  leek: { x: 340, y: 20 },
   stokeOnTrent: { x: 260, y: 100 },
   stone: { x: 200, y: 160 },
   uttoxeter: { x: 350, y: 150 },
@@ -25,20 +25,19 @@ const LOCATION_POSITIONS = {
   farmBrewery1: { x: 160, y: 300 },
   farmBrewery2: { x: 60, y: 570 },
   derby: { x: 460, y: 150 },
-  belper: { x: 430, y: 80 },
+  belper: { x: 490, y: 40 },
   nottingham: { x: 540, y: 180 },
   shrewsbury: { x: 10, y: 320 },
   gloucester: { x: 80, y: 670 },
   oxford: { x: 400, y: 570 },
-  warrington: { x: 180, y: 10 },
-  merchantNottingham: { x: 600, y: 140 },
+  warrington: { x: 160, y: 10 },
 }
 
 const PLAYER_COLORS = {
   red: '#ef4444',
+  blue: '#3b82f6',
   yellow: '#eab308',
   purple: '#a855f7',
-  white: '#e7e5e4',
 }
 
 const INDUSTRY_COLORS = {
@@ -59,13 +58,59 @@ const INDUSTRY_LETTERS = {
   pottery: 'P',
 }
 
+// Static connection metadata (canal/rail flags) — must mirror board-connections.js
+const CONNECTION_META = {
+  'warrington-stokeOnTrent':       { canal: true,  rail: true  },
+  'stokeOnTrent-leek':             { canal: true,  rail: true  },
+  'stokeOnTrent-stone':            { canal: true,  rail: true  },
+  'leek-belper':                   { canal: false, rail: true  },
+  'stone-uttoxeter':               { canal: false, rail: true  },
+  'stone-stafford':                { canal: true,  rail: true  },
+  'uttoxeter-derby':               { canal: false, rail: true  },
+  'derby-belper':                  { canal: true,  rail: true  },
+  'derby-nottingham':              { canal: true,  rail: true  },
+  'derby-burtonOnTrent':           { canal: true,  rail: true  },
+  'stafford-cannock':              { canal: true,  rail: true  },
+  'cannock-farmBrewery1':          { canal: true,  rail: true  },
+  'cannock-burtonOnTrent':         { canal: false, rail: true  },
+  'cannock-wolverhampton':         { canal: true,  rail: true  },
+  'wolverhampton-coalbrookdale':   { canal: true,  rail: true  },
+  'wolverhampton-walsall':         { canal: true,  rail: true  },
+  'coalbrookdale-shrewsbury':      { canal: true,  rail: true  },
+  'coalbrookdale-kidderminster':   { canal: true,  rail: true  },
+  'walsall-tamworth':              { canal: false, rail: true  },
+  'tamworth-burtonOnTrent':        { canal: true,  rail: true  },
+  'tamworth-nuneaton':             { canal: true,  rail: true  },
+  'nuneaton-coventry':             { canal: false, rail: true  },
+  'coventry-birmingham':           { canal: true,  rail: true  },
+  'dudley-birmingham':             { canal: true,  rail: true  },
+  'dudley-wolverhampton':          { canal: true,  rail: true  },
+  'kidderminster-worcester':       { canal: true,  rail: true  },
+  'kidderminster-farmBrewery2':    { canal: true,  rail: true  },
+  'worcester-gloucester':          { canal: true,  rail: true  },
+  'worcester-birmingham':          { canal: true,  rail: true  },
+  'worcester-farmBrewery2':        { canal: true,  rail: true  },
+  'gloucester-redditch':           { canal: true,  rail: true  },
+  'redditch-birmingham':           { canal: false, rail: true  },
+  'redditch-oxford':               { canal: true,  rail: true  },
+  'birmingham-oxford':             { canal: true,  rail: true  },
+}
+
+// Unbuilt line styles per connection type
+const LINK_STYLE = {
+  canal: { stroke: '#a8a29e', dash: '2 4',   width: 2 },   // dots  . . .
+  rail:  { stroke: '#a8a29e', dash: '8 4',   width: 2 },   // dashes  — — —
+  both:  { stroke: '#a8a29e', dash: '8 4 2 4', width: 2 }, // dash-dot  —.—.
+}
+
 const DEFAULT_VB = { x: -20, y: -20, w: 660, h: 720 }
 const MIN_ZOOM = 0.25
 const MAX_ZOOM = 4
 const DRAG_THRESHOLD = 4
 
 function parseConnectionEndpoints (connId) {
-  const knownLocations = Object.keys(LOCATION_POSITIONS)
+  // Sort longest-first so 'stokeOnTrent' is matched before 'stone', etc.
+  const knownLocations = Object.keys(LOCATION_POSITIONS).sort((a, b) => b.length - a.length)
   for (const loc of knownLocations) {
     if (connId.startsWith(loc + '-')) {
       const rest = connId.slice(loc.length + 1)
@@ -270,9 +315,13 @@ export function Board ({ gameState, playerId }) {
           const isSelected = selectedConnectionIds.has(connId)
           const isTargetable = targetingMode === 'connection' && !isBuilt
 
+          const meta = CONNECTION_META[connId] || { canal: true, rail: true }
+          const linkType = meta.canal && meta.rail ? 'both' : meta.canal ? 'canal' : 'rail'
+          const style = LINK_STYLE[linkType]
+
           const ownerColor = isBuilt
-            ? PLAYER_COLORS[gameState.players.find(p => p.id === link.ownerId)?.color] || '#555'
-            : '#44403c'
+            ? PLAYER_COLORS[gameState.players.find(p => p.id === link.ownerId)?.color] || '#888'
+            : style.stroke
 
           const dx = toPos.x - fromPos.x
           const dy = toPos.y - fromPos.y
@@ -281,8 +330,12 @@ export function Board ({ gameState, playerId }) {
           const nx = -dy / len * offset
           const ny = dx / len * offset
 
+          // Era-based dim: canal-only links dim in rail era, rail-only in canal era
+          const era = gameState.era
+          const isWrongEra = (era === 'canal' && !meta.canal) || (era === 'rail' && !meta.rail)
+
           return (
-            <g key={connId}>
+            <g key={connId} opacity={!isBuilt && isWrongEra ? 0.25 : 1}>
               {isTargetable && (
                 <line
                   x1={fromPos.x + nx} y1={fromPos.y + ny}
@@ -295,9 +348,9 @@ export function Board ({ gameState, playerId }) {
               <line
                 x1={fromPos.x + nx} y1={fromPos.y + ny}
                 x2={toPos.x + nx} y2={toPos.y + ny}
-                stroke={isSelected ? '#f59e0b' : ownerColor}
-                strokeWidth={isSelected ? 5 : isBuilt ? 4 : 2}
-                strokeDasharray={isBuilt || isSelected ? 'none' : '4 4'}
+                stroke={isSelected ? '#f59e0b' : isBuilt ? ownerColor : style.stroke}
+                strokeWidth={isSelected ? 5 : isBuilt ? 4 : style.width}
+                strokeDasharray={isSelected ? 'none' : isBuilt ? 'none' : style.dash}
                 pointerEvents="none"
               />
               {isSelected && (
@@ -315,7 +368,7 @@ export function Board ({ gameState, playerId }) {
 
         {/* Location nodes */}
         {Object.entries(LOCATION_POSITIONS).map(([locId, pos]) => {
-          const isMerchant = ['shrewsbury', 'gloucester', 'oxford', 'warrington', 'merchantNottingham'].includes(locId)
+          const isMerchant = ['shrewsbury', 'gloucester', 'oxford', 'warrington', 'nottingham'].includes(locId)
           const isFarm = locId.startsWith('farmBrewery')
           const isSelected = selectedLocationId === locId
           const isTargetable = targetingMode === 'location' && !isMerchant &&
@@ -444,16 +497,31 @@ export function Board ({ gameState, playerId }) {
               })}
 
               {/* Location name */}
-              <text
-                x={pos.x} y={pos.y + (isMerchant ? 22 : 28)}
-                textAnchor="middle"
-                fill={isSelected ? '#fbbf24' : '#a8a29e'}
-                fontSize={isSelected ? 9 : 8}
-                fontWeight={isSelected ? 'bold' : 'normal'}
-                pointerEvents="none"
-              >
-                {formatLocationName(locId)}
-              </text>
+              {(() => {
+                const name = formatLocationName(locId)
+                const labelY = pos.y + (isMerchant ? 24 : 30)
+                const parts = name.split('-')
+                return (
+                  <g pointerEvents="none">
+                    {parts.map((part, i) => (
+                      <text
+                        key={i}
+                        x={pos.x}
+                        y={labelY + i * 9}
+                        textAnchor="middle"
+                        fill={isSelected ? '#fbbf24' : '#d4cfc9'}
+                        fontSize={9}
+                        fontWeight={isSelected ? 'bold' : 'normal'}
+                        stroke="#1c1917"
+                        strokeWidth={2.5}
+                        paintOrder="stroke"
+                      >
+                        {part}
+                      </text>
+                    ))}
+                  </g>
+                )
+              })()}
             </g>
           )
         })}
@@ -471,6 +539,22 @@ export function Board ({ gameState, playerId }) {
           )
         })}
       </svg>
+
+      {/* Link type legend */}
+      <div className="absolute top-2 left-2 flex flex-col gap-1 bg-stone-900/80 border border-stone-700 rounded px-2 py-1.5 pointer-events-none">
+        {[
+          { label: 'Canal',      dash: '2 4'     },
+          { label: 'Rail',       dash: '8 4'     },
+          { label: 'Canal/Rail', dash: '8 4 2 4' },
+        ].map(({ label, dash }) => (
+          <div key={label} className="flex items-center gap-1.5">
+            <svg width="28" height="8">
+              <line x1="0" y1="4" x2="28" y2="4" stroke="#a8a29e" strokeWidth="2" strokeDasharray={dash} />
+            </svg>
+            <span className="text-[10px] text-stone-400">{label}</span>
+          </div>
+        ))}
+      </div>
 
       {/* Zoom controls */}
       <div className="absolute bottom-2 right-2 flex flex-col gap-1">
@@ -540,17 +624,33 @@ function buildValidLocationSet (selectedAction, cardObj, gameState) {
 
 function formatLocationName (id) {
   const names = {
-    stokeOnTrent: 'Stoke',
-    burtonOnTrent: 'Burton',
-    coalbrookdale: 'C.dale',
-    wolverhampton: 'Wolves',
-    kidderminster: 'Kidder.',
-    farmBrewery1: 'Farm',
-    farmBrewery2: 'Farm',
-    merchantNottingham: 'Nott. M',
-    shrewsbury: 'Shrews.',
-    gloucester: 'Glouc.',
-    warrington: 'Warr.',
+    stokeOnTrent: 'Stoke-on-Trent',
+    burtonOnTrent: 'Burton-on-Trent',
+    coalbrookdale: 'Coalbrookdale',
+    wolverhampton: 'Wolverhampton',
+    kidderminster: 'Kidderminster',
+    farmBrewery1: 'Farm Brewery',
+    farmBrewery2: 'Farm Brewery',
+    shrewsbury: 'Shrewsbury',
+    gloucester: 'Gloucester',
+    warrington: 'Warrington',
+    nuneaton: 'Nuneaton',
+    redditch: 'Redditch',
+    tamworth: 'Tamworth',
+    cannock: 'Cannock',
+    stafford: 'Stafford',
+    uttoxeter: 'Uttoxeter',
+    walsall: 'Walsall',
+    dudley: 'Dudley',
+    coventry: 'Coventry',
+    worcester: 'Worcester',
+    birmingham: 'Birmingham',
+    nottingham: 'Nottingham',
+    belper: 'Belper',
+    derby: 'Derby',
+    leek: 'Leek',
+    stone: 'Stone',
+    oxford: 'Oxford',
   }
   return names[id] || id.charAt(0).toUpperCase() + id.slice(1)
 }
