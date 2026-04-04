@@ -1,4 +1,20 @@
-const { connections } = require('../data/board-connections')
+const { connections, TRUNK_ATTACHED_FARM } = require('../data/board-connections')
+
+function addTrunkFarmEdges (adj, boardLinks, era) {
+  const { trunkConnectionId, farmLocationId, endpointA, endpointB } = TRUNK_ATTACHED_FARM
+  const conn = connections.find(c => c.id === trunkConnectionId)
+  if (!conn) return
+  const routeOk = era === 'canal' ? conn.canalRoute : conn.railRoute
+  if (!routeOk) return
+  const trunk = boardLinks[trunkConnectionId]
+  if (!trunk || trunk.ownerId === null) return
+
+  if (!adj[farmLocationId]) adj[farmLocationId] = []
+  const edge = { connectionId: trunkConnectionId }
+  adj[farmLocationId].push({ to: endpointA, ...edge }, { to: endpointB, ...edge })
+  adj[endpointA].push({ to: farmLocationId, ...edge })
+  adj[endpointB].push({ to: farmLocationId, ...edge })
+}
 
 function buildAdjacencyMap (boardLinks, era) {
   const adj = {}
@@ -19,6 +35,7 @@ function buildAdjacencyMap (boardLinks, era) {
     }
   }
 
+  addTrunkFarmEdges(adj, boardLinks, era)
   return adj
 }
 
@@ -121,6 +138,9 @@ function getPlayerNetwork (state, playerId) {
     if (link && link.ownerId === playerId) {
       networkLocations.add(conn.from)
       networkLocations.add(conn.to)
+      if (conn.id === TRUNK_ATTACHED_FARM.trunkConnectionId) {
+        networkLocations.add(TRUNK_ATTACHED_FARM.farmLocationId)
+      }
     }
   }
 

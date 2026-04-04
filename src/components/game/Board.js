@@ -60,10 +60,8 @@ const CONNECTION_META = {
   'dudley-kidderminster':          { canal: true,  rail: true  },
   'dudley-wolverhampton':          { canal: true,  rail: true  },
   'kidderminster-worcester':       { canal: true,  rail: true  },
-  'kidderminster-farmBrewery2':    { canal: true,  rail: true  },
   'worcester-gloucester':          { canal: true,  rail: true  },
   'worcester-birmingham':          { canal: true,  rail: true  },
-  'worcester-farmBrewery2':        { canal: true,  rail: true  },
   'gloucester-redditch':           { canal: true,  rail: true  },
   'redditch-birmingham':           { canal: false, rail: true  },
   'redditch-oxford':               { canal: true,  rail: true  },
@@ -397,6 +395,72 @@ export function Board ({ gameState, playerId }) {
             </g>
           )
         })}
+
+        {/* Farm brewery (Kidderminster–Worcester): T-stem — same selection/hit as trunk id */}
+        {(() => {
+          const kPos = LOCATION_POSITIONS.kidderminster
+          const wPos = LOCATION_POSITIONS.worcester
+          const fPos = LOCATION_POSITIONS.farmBrewery2
+          if (!kPos || !wPos || !fPos) return null
+          const midX = (kPos.x + wPos.x) / 2
+          const midY = (kPos.y + wPos.y) / 2
+          const trunkId = 'kidderminster-worcester'
+          const kwLink = gameState.board.links[trunkId]
+          const meta = CONNECTION_META[trunkId] || { canal: true, rail: true }
+          const era = gameState.era
+          const isWrongEra = (era === 'canal' && !meta.canal) || (era === 'rail' && !meta.rail)
+          const isBuilt = kwLink?.ownerId != null
+          const isSelected = selectedConnectionIds.has(trunkId)
+          const isTargetable = targetingMode === 'connection' && !isBuilt
+          const linkType = meta.canal && meta.rail ? 'both' : meta.canal ? 'canal' : 'rail'
+          const style = LINK_STYLE[linkType]
+          const ownerColor = isBuilt
+            ? PLAYER_COLORS[gameState.players.find(p => p.id === kwLink.ownerId)?.color] || '#888'
+            : style.stroke
+          const strokeColor = isSelected ? '#f59e0b' : isBuilt ? ownerColor : style.stroke
+          const strokeW = isSelected ? 5 : isBuilt ? 4 : style.width
+          const dash = isSelected ? 'none' : isBuilt ? 'none' : style.dash
+          return (
+            <g key="farmBrewery2-trunk-stem" opacity={!isBuilt && isWrongEra ? 0.25 : 1}>
+              {isTargetable && (
+                <line
+                  x1={fPos.x}
+                  y1={fPos.y}
+                  x2={midX}
+                  y2={midY}
+                  stroke="transparent"
+                  strokeWidth={16}
+                  className="cursor-pointer"
+                  onClick={(e) => handleConnectionClick(e, trunkId)}
+                />
+              )}
+              <line
+                x1={fPos.x}
+                y1={fPos.y}
+                x2={midX}
+                y2={midY}
+                stroke={strokeColor}
+                strokeWidth={strokeW}
+                strokeDasharray={dash}
+                pointerEvents="none"
+              />
+              {isSelected && (
+                <line
+                  x1={fPos.x}
+                  y1={fPos.y}
+                  x2={midX}
+                  y2={midY}
+                  stroke="#fbbf24"
+                  strokeWidth={7}
+                  opacity={0.3}
+                  pointerEvents="none"
+                >
+                  <animate attributeName="opacity" values="0.15;0.45;0.15" dur="1.5s" repeatCount="indefinite" />
+                </line>
+              )}
+            </g>
+          )
+        })()}
 
         {/* Location nodes */}
         {Object.entries(LOCATION_POSITIONS).map(([locId, pos]) => {

@@ -24,7 +24,7 @@ coventry and birmingham rail and canal
 birmingham and dudley rail and canal
 dudley wolverhampton rail and canal
 coalbrookdale and kidderminster rail and canal
-kidderminster and worcester and  beer rail and canal (triple connection)
+kidderminster and worcester rail and canal (farm brewery on this trunk — no separate farm links; access when this link is built)
 worcester and gloucester rail and canal
 gloucester and reddich rail and canal
 reddich and biurmingham rail

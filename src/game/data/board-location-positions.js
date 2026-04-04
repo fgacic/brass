@@ -8,7 +8,7 @@ export const LOCATION_POSITIONS = {
   derby: { x: 460, y: 150 },
   dudley: { x: 180, y: 450 },
   farmBrewery1: { x: 160, y: 260 },
-  farmBrewery2: { x: 60, y: 570 },
+  farmBrewery2: { x: 40, y: 578 },
   gloucester: { x: 200, y: 630 },
   kidderminster: { x: 80, y: 500 },
   leek: { x: 340, y: 20 },

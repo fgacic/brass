@@ -1,3 +1,11 @@
+/** Farm location only reachable when this trunk link is built (pathfinding + player network). */
+const TRUNK_ATTACHED_FARM = {
+  trunkConnectionId: 'kidderminster-worcester',
+  farmLocationId: 'farmBrewery2',
+  endpointA: 'kidderminster',
+  endpointB: 'worcester',
+}
+
 const connections = [
   // Warrington
   { id: 'warrington-stokeOnTrent', from: 'warrington', to: 'stokeOnTrent', canalRoute: true, railRoute: true },
@@ -57,14 +65,12 @@ const connections = [
   { id: 'dudley-kidderminster', from: 'dudley', to: 'kidderminster', canalRoute: true, railRoute: true },
   { id: 'dudley-wolverhampton', from: 'dudley', to: 'wolverhampton', canalRoute: true, railRoute: true },
 
-  // Kidderminster (triple: kidderminster-worcester-farmBrewery2)
+  // Kidderminster–Worcester (farmBrewery2 sits on this trunk; no separate farm links — see TRUNK_ATTACHED_FARM)
   { id: 'kidderminster-worcester', from: 'kidderminster', to: 'worcester', canalRoute: true, railRoute: true },
-  { id: 'kidderminster-farmBrewery2', from: 'kidderminster', to: 'farmBrewery2', canalRoute: true, railRoute: true },
 
   // Worcester
   { id: 'worcester-gloucester', from: 'worcester', to: 'gloucester', canalRoute: true, railRoute: true },
   { id: 'worcester-birmingham', from: 'worcester', to: 'birmingham', canalRoute: true, railRoute: true },
-  { id: 'worcester-farmBrewery2', from: 'worcester', to: 'farmBrewery2', canalRoute: true, railRoute: true },
 
   // Gloucester
   { id: 'gloucester-redditch', from: 'gloucester', to: 'redditch', canalRoute: true, railRoute: true },
@@ -101,6 +107,7 @@ function getConnectionsForEra (era) {
 
 module.exports = {
   connections,
+  TRUNK_ATTACHED_FARM,
   getConnectionsForLocation,
   getAdjacentLocations,
   getConnectionBetween,
