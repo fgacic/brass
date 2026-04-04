@@ -29,7 +29,7 @@ export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan })
       }
       transition={{ duration: 0.9, ease: 'easeOut' }}
     >
-      <div className="flex min-w-0 items-center gap-4">
+      <div className="flex min-w-0 flex-1 items-center gap-4">
         <span className="shrink-0 text-sm font-medium text-amber-100/55">
           {gameState.era === 'canal' ? 'Canal era' : 'Rail era'} <span className="text-amber-900/60">·</span> Round {gameState.round}
         </span>
@@ -43,46 +43,76 @@ export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan })
         )}
       </div>
 
-      <div className="flex shrink-0 flex-col items-end gap-1">
-        <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-amber-200/40">Players</span>
-        <div className="flex flex-wrap justify-end gap-x-2 gap-y-1.5">
-          {gameState.players.map(p => {
+      <div className="flex shrink-0 flex-col items-end gap-2">
+        <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-amber-200/55">
+          Turn order
+        </span>
+        <div className="flex flex-wrap justify-end gap-x-4 gap-y-3">
+          {gameState.turnOrder.map((orderedPlayerId, orderIndex) => {
+            const p = gameState.players.find(x => x.id === orderedPlayerId)
+            if (!p) return null
             const hex = PLAYER_COLOR_HEX[p.color] || '#78716c'
             const isCurrent = p.id === currentPlayerId
             const isYou = p.id === playerId
+
             return (
               <div
                 key={p.id}
-                className={`flex items-center gap-2 rounded-lg border px-2 py-1 shadow-sm ${
-                  isCurrent
-                    ? 'border-amber-500/50 bg-gradient-to-b from-[#2a2218] to-[#1a1510] ring-1 ring-amber-500/35'
-                    : 'border-stone-700/50 bg-[#14100d]/90'
-                }`}
+                className="flex w-[4.75rem] flex-col items-center gap-1"
               >
                 <span
-                  className="h-3 w-3 shrink-0 rounded-full border border-black/40 shadow-inner"
-                  style={{ backgroundColor: hex }}
-                  title={p.color}
-                />
-                <span className="max-w-28 truncate text-xs text-[#ebe4d9]">{p.name}</span>
-                {isYou && (
-                  <span className="text-[9px] font-bold uppercase text-amber-400/95">You</span>
-                )}
-                <span className="tabular-nums text-[11px] font-semibold text-amber-400">{p.vpMarker} VP</span>
-                <m.span
-                  className="tabular-nums text-[11px] font-semibold text-emerald-400 inline-block"
-                  animate={
-                    isYou && moneyPulseLoan && !reduceMotion
-                      ? {
-                        scale: [1, 1.12, 1],
-                        color: ['rgb(52, 211, 153)', 'rgb(167, 243, 208)', 'rgb(52, 211, 153)'],
-                      }
-                      : { scale: 1 }
-                  }
-                  transition={{ duration: 0.75, ease: 'easeOut' }}
+                  className={`flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[10px] font-bold tabular-nums ${
+                    isCurrent
+                      ? 'bg-amber-500/90 text-stone-950 shadow-md shadow-amber-900/40'
+                      : 'bg-stone-800/90 text-amber-100/65 ring-1 ring-stone-600/60'
+                  }`}
+                  title={`Order ${orderIndex + 1}`}
                 >
-                  £{p.money}
-                </m.span>
+                  {orderIndex + 1}
+                </span>
+                <div className="relative flex flex-col items-center pb-4">
+                  <div
+                    className={`rounded-full ${
+                      isCurrent
+                        ? 'p-0.5 shadow-[0_0_20px_rgba(251,191,36,0.4)] ring-[3px] ring-amber-400 ring-offset-2 ring-offset-[#1a1510]/95'
+                        : 'p-0.5 ring-1 ring-stone-600/70 ring-offset-1 ring-offset-[#14100d]'
+                    }`}
+                  >
+                    <div
+                      className="h-11 w-11 shrink-0 rounded-full border-2 border-black/45 shadow-inner shadow-black/30"
+                      style={{ backgroundColor: hex }}
+                      title={`${p.name} (${p.color})`}
+                    />
+                  </div>
+                  {isCurrent && (
+                    <span className="absolute bottom-0 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-amber-500 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide text-stone-950 shadow-md shadow-amber-950/50">
+                      Now
+                    </span>
+                  )}
+                </div>
+                <span className="max-w-full truncate text-center text-[10px] font-medium leading-tight text-[#ebe4d9]">
+                  {p.name}
+                </span>
+                {isYou && (
+                  <span className="text-[8px] font-bold uppercase text-amber-400/95">You</span>
+                )}
+                <div className="flex flex-col items-center gap-px text-[9px] leading-tight tabular-nums">
+                  <span className="font-semibold text-amber-400/90">{p.vpMarker} VP</span>
+                  <m.span
+                    className="font-semibold text-emerald-400/95"
+                    animate={
+                      isYou && moneyPulseLoan && !reduceMotion
+                        ? {
+                          scale: [1, 1.12, 1],
+                          color: ['rgb(52, 211, 153)', 'rgb(167, 243, 208)', 'rgb(52, 211, 153)'],
+                        }
+                        : { scale: 1 }
+                    }
+                    transition={{ duration: 0.75, ease: 'easeOut' }}
+                  >
+                    £{p.money}
+                  </m.span>
+                </div>
               </div>
             )
           })}
