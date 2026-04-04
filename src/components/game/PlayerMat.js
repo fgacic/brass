@@ -42,12 +42,12 @@ const INDUSTRY_LABELS = {
 }
 
 const INDUSTRY_COLORS = {
-  cottonMill: 'bg-blue-900/40 border-blue-700',
-  manufacturer: 'bg-purple-900/40 border-purple-700',
-  coalMine: 'bg-zinc-800/40 border-zinc-600',
-  ironWorks: 'bg-orange-900/40 border-orange-700',
-  brewery: 'bg-yellow-900/40 border-yellow-700',
-  pottery: 'bg-teal-900/40 border-teal-700',
+  cottonMill: 'border-blue-500/45 bg-gradient-to-br from-blue-600/35 to-blue-950/50 shadow-sm',
+  manufacturer: 'border-violet-500/45 bg-gradient-to-br from-violet-600/35 to-violet-950/50 shadow-sm',
+  coalMine: 'border-zinc-500/40 bg-gradient-to-br from-zinc-600/30 to-zinc-950/55 shadow-sm',
+  ironWorks: 'border-orange-500/45 bg-gradient-to-br from-orange-600/35 to-orange-950/50 shadow-sm',
+  brewery: 'border-amber-500/45 bg-gradient-to-br from-amber-600/35 to-amber-950/50 shadow-sm',
+  pottery: 'border-teal-500/45 bg-gradient-to-br from-teal-600/35 to-teal-950/50 shadow-sm',
 }
 
 export function PlayerMat ({ player }) {
@@ -56,31 +56,31 @@ export function PlayerMat ({ player }) {
   const income = getIncomeAtPosition(player.incomeMarkerPosition)
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-stone-300">Your Mat</h3>
-        <div className="flex gap-3 text-xs">
-          <span className="text-green-400">£{player.money}</span>
+    <div className="space-y-3 rounded-xl border border-amber-900/25 bg-[#0f0c0a]/55 p-3 shadow-inner shadow-black/30">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="font-display text-sm font-semibold text-amber-100/80">Your mat</h3>
+        <div className="flex flex-wrap justify-end gap-x-3 gap-y-1 text-xs font-semibold">
+          <span className="text-emerald-400">£{player.money}</span>
           <span className="text-amber-400">{player.vpMarker} VP</span>
-          <span className="text-blue-400">Inc: {income}</span>
+          <span className="text-sky-400">Inc: {income}</span>
           <span className="text-stone-400">{player.linkTilesRemaining} links</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-1.5">
+      <div className="grid grid-cols-2 gap-2">
         {Object.entries(player.playerMat || {}).map(([industry, tiles]) => (
           <div
             key={industry}
-            className={`px-2 py-1.5 rounded border text-xs ${INDUSTRY_COLORS[industry] || 'bg-stone-800 border-stone-700'}`}
+            className={`rounded-lg border px-2 py-1.5 text-xs ${INDUSTRY_COLORS[industry] || 'border-stone-600 bg-stone-900/50'}`}
           >
-            <div className="flex justify-between items-center">
-              <span className="text-stone-300 font-medium">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-[#ebe4d9]">
                 {INDUSTRY_LABELS[industry] || industry}
               </span>
-              <span className="text-stone-400">{tiles.length}</span>
+              <span className="tabular-nums text-amber-100/50">{tiles.length}</span>
             </div>
             {tiles.length > 0 && (
-              <div className="mt-0.5 text-stone-500">
+              <div className="mt-0.5 text-amber-100/40">
                 Next: L{tiles[0].level} (£{tiles[0].cost})
               </div>
             )}

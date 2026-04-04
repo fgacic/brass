@@ -1,1 +1,11 @@
 @import "tailwindcss";
+
+/* Display font from next/font on <html class="... variable"> */
+.font-display {
+  font-family: var(--font-lora), ui-serif, Georgia, "Times New Roman", serif;
+}
+
+::selection {
+  background-color: rgba(217, 119, 6, 0.35);
+  color: #fffbeb;
+}

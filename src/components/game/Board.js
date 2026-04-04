@@ -676,7 +676,7 @@ export function Board ({ gameState, playerId }) {
       </svg>
 
       {/* Link type legend */}
-      <div className="absolute top-2 left-2 flex flex-col gap-1 bg-stone-900/80 border border-stone-700 rounded px-2 py-1.5 pointer-events-none">
+      <div className="pointer-events-none absolute top-2 left-2 flex flex-col gap-1 rounded-lg border border-amber-900/30 bg-[#14100e]/92 px-2.5 py-2 shadow-lg shadow-black/40 backdrop-blur-sm ring-1 ring-white/5">
         {[
           { label: 'Canal',      dash: '2 4'     },
           { label: 'Rail',       dash: '8 4'     },
@@ -686,32 +686,47 @@ export function Board ({ gameState, playerId }) {
             <svg width="28" height="8">
               <line x1="0" y1="4" x2="28" y2="4" stroke="#a8a29e" strokeWidth="2" strokeDasharray={dash} />
             </svg>
-            <span className="text-[10px] text-stone-400">{label}</span>
+            <span className="text-[10px] font-medium text-amber-100/55">{label}</span>
           </div>
         ))}
       </div>
 
-      {/* Industry letters (match orbital badges on locations) */}
-      <div className="absolute top-2 right-2 flex flex-col gap-1 bg-stone-900/80 border border-stone-700 rounded px-2 py-1.5 pointer-events-none max-h-[min(50vh,320px)] overflow-y-auto">
-        <span className="text-[9px] text-stone-500 font-semibold uppercase tracking-wide">Industries</span>
+      {/* Industry letters + merchant beer / triple demand (narrow, w-fit) */}
+      <div className="pointer-events-none absolute top-2 right-2 flex max-h-[min(50vh,320px)] w-fit flex-col gap-1 overflow-y-auto rounded-lg border border-amber-900/30 bg-[#14100e]/92 px-2 py-1.5 shadow-lg shadow-black/40 backdrop-blur-sm ring-1 ring-white/5">
+        <span className="whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.1em] text-amber-200/45">
+          Industries
+        </span>
         {INDUSTRY_LEGEND_ORDER.map((id) => (
-          <div key={id} className="flex items-center gap-2">
+          <div key={id} className="flex w-max items-center gap-1.5">
             <span
-              className="w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[9px] font-bold text-white border border-stone-800"
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-black/40 text-[9px] font-bold text-white shadow-sm"
               style={{ backgroundColor: INDUSTRY_COLORS[id] }}
             >
               {INDUSTRY_LETTERS[id]}
             </span>
-            <span className="text-[10px] text-stone-300 leading-tight">{INDUSTRY_LABEL[id]}</span>
+            <span className="whitespace-nowrap text-[10px] font-medium text-[#ddd6cc]">
+              {INDUSTRY_LABEL[id]}
+            </span>
           </div>
         ))}
-        <p className="text-[8px] text-stone-500 leading-snug mt-0.5 pt-1 border-t border-stone-700/80">
-          Merchant demand: letter discs for one good; a three-part C/M/P disc is one foreign market that accepts cotton, manufacturer, and pottery (hover for tooltip).
+        <div className="mt-0.5 w-fit max-w-[9.5rem] border-t border-amber-900/25 pt-1">
+          <div className="flex items-start gap-1.5">
+            <span
+              className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full border border-[#fbbf24] bg-[#ca8a04]"
+              aria-hidden
+            />
+            <span className="text-[8px] font-medium leading-snug text-amber-100/48">
+              Gold dots at merchants: beer barrels (sell using market). Refill at rail era.
+            </span>
+          </div>
+        </div>
+        <p className="w-fit max-w-[9.5rem] border-t border-amber-900/25 pt-1 text-[8px] leading-snug text-amber-100/38">
+          Triple C/M/P disc: one demand, three goods, one beer. Hover for tooltip.
         </p>
       </div>
 
       {/* Zoom controls */}
-      <div className="absolute bottom-2 right-2 flex flex-col gap-1">
+      <div className="absolute bottom-2 right-2 flex flex-col gap-1.5">
         <button
           onClick={() => setVb(prev => {
             const factor = 1 / 1.3
@@ -722,7 +737,7 @@ export function Board ({ gameState, playerId }) {
             if (newW / DEFAULT_VB.w < MIN_ZOOM) return prev
             return { x: cx - newW / 2, y: cy - newH / 2, w: newW, h: newH }
           })}
-          className="w-8 h-8 bg-stone-800/80 hover:bg-stone-700 border border-stone-600 text-stone-300 rounded flex items-center justify-center text-lg leading-none"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-amber-900/35 bg-gradient-to-b from-[#2a2218] to-[#14100e] text-lg leading-none text-amber-100/90 shadow-lg shadow-black/40 transition hover:from-[#352a1e] hover:to-[#1a1510] hover:text-amber-50"
           title="Zoom in"
         >
           +
@@ -737,14 +752,14 @@ export function Board ({ gameState, playerId }) {
             if (newW / DEFAULT_VB.w > MAX_ZOOM) return prev
             return { x: cx - newW / 2, y: cy - newH / 2, w: newW, h: newH }
           })}
-          className="w-8 h-8 bg-stone-800/80 hover:bg-stone-700 border border-stone-600 text-stone-300 rounded flex items-center justify-center text-lg leading-none"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-amber-900/35 bg-gradient-to-b from-[#2a2218] to-[#14100e] text-lg leading-none text-amber-100/90 shadow-lg shadow-black/40 transition hover:from-[#352a1e] hover:to-[#1a1510]"
           title="Zoom out"
         >
-          -
+          −
         </button>
         <button
           onClick={resetView}
-          className="w-8 h-8 bg-stone-800/80 hover:bg-stone-700 border border-stone-600 text-stone-300 rounded flex items-center justify-center text-xs leading-none"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-amber-900/35 bg-gradient-to-b from-[#2a2218] to-[#14100e] text-xs font-bold leading-none text-amber-100/90 shadow-lg shadow-black/40 transition hover:from-[#352a1e] hover:to-[#1a1510]"
           title="Reset view"
         >
           R

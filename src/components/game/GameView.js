@@ -13,7 +13,13 @@ import { GameOver } from './GameOver'
 export function GameView ({ playerId }) {
   const { gameState } = useGameStore()
 
-  if (!gameState) return <div className="text-center p-8">Loading...</div>
+  if (!gameState) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#1c1611] via-[#121a15] to-[#0c1012]">
+        <p className="font-display text-lg text-amber-200/70">Loading game…</p>
+      </div>
+    )
+  }
 
   if (gameState.phase === 'gameOver') {
     return <GameOver gameState={gameState} playerId={playerId} />
@@ -23,16 +29,16 @@ export function GameView ({ playerId }) {
   const isMyTurn = gameState.turnOrder[gameState.currentPlayerIndex] === playerId
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-stone-900">
+    <div className="flex h-screen flex-col overflow-hidden bg-gradient-to-b from-[#16120f] via-[#12100e] to-[#0a0c0b]">
       <TurnInfo gameState={gameState} playerId={playerId} />
 
       <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 overflow-hidden">
+        <div className="relative flex-1 overflow-hidden shadow-[inset_0_0_80px_rgba(0,0,0,0.35)]">
           <Board gameState={gameState} playerId={playerId} />
         </div>
 
-        <div className="w-80 flex flex-col border-l border-stone-700 bg-stone-800/50">
-          <div className="flex-1 overflow-auto p-3 space-y-3">
+        <div className="flex w-80 flex-col border-l border-amber-900/25 bg-gradient-to-b from-[#1f1813]/95 to-[#14100d]/98 shadow-[-12px_0_40px_rgba(0,0,0,0.35)] backdrop-blur-md">
+          <div className="flex-1 space-y-4 overflow-auto p-4">
             <MarketTrack
               coalMarket={gameState.coalMarket}
               ironMarket={gameState.ironMarket}
@@ -43,7 +49,7 @@ export function GameView ({ playerId }) {
         </div>
       </div>
 
-      <div className="border-t border-stone-700 bg-stone-800">
+      <div className="border-t border-amber-900/30 bg-gradient-to-r from-[#1c1611] via-[#221a14] to-[#1c1611] shadow-[0_-12px_40px_rgba(0,0,0,0.4)] ring-1 ring-black/20">
         <Hand cards={myPlayer?.hand || []} playerId={playerId} />
         {isMyTurn && (
           <ActionPanel

@@ -207,30 +207,30 @@ export function ActionPanel ({ gameState, playerId }) {
   const isReady = getMissingSteps().length === 0
 
   return (
-    <div className="px-4 py-2 space-y-2">
+    <div className="space-y-2 border-t border-amber-900/20 bg-[#0f0c0a]/50 px-4 py-3">
       {actionError && (
-        <div className="text-xs text-red-400 bg-red-900/30 px-3 py-1.5 rounded border border-red-800">
+        <div className="rounded-lg border border-red-500/35 bg-gradient-to-r from-red-950/60 to-red-900/20 px-3 py-2 text-xs text-red-200 shadow-inner">
           {actionError}
         </div>
       )}
 
       {!selectedAction ? (
-        <div className="space-y-1">
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-stone-400">Choose an action:</p>
+            <p className="text-xs font-medium text-amber-100/55">Choose an action</p>
             <button
               onClick={() => setShowDebug(!showDebug)}
-              className="text-[10px] px-1.5 py-0.5 text-stone-500 hover:text-stone-300 bg-stone-800 rounded"
+              className="rounded-md border border-stone-600/40 bg-stone-900/80 px-2 py-0.5 text-[10px] text-stone-400 transition hover:border-amber-800/50 hover:text-amber-100/80"
             >
               {showDebug ? 'Hide Debug' : 'Debug'}
             </button>
           </div>
-          <div className="flex gap-1.5 flex-wrap">
+          <div className="flex flex-wrap gap-2">
             {ACTIONS.map(a => (
               <button
                 key={a.type}
                 onClick={() => handleActionSelect(a.type)}
-                className="px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-300 rounded text-xs font-medium transition-colors"
+                className="rounded-lg border border-stone-600/35 bg-gradient-to-b from-stone-600 to-stone-800 px-3 py-2 text-xs font-semibold text-stone-100 shadow-md shadow-black/25 transition hover:from-stone-500 hover:to-stone-700 hover:shadow-lg active:scale-[0.98]"
                 title={a.desc}
               >
                 {a.label}
@@ -245,7 +245,7 @@ export function ActionPanel ({ gameState, playerId }) {
               {selectedAction}
             </span>
 
-            <span className="text-stone-600">|</span>
+            <span className="text-amber-900/45">|</span>
 
             {selectedCard ? (
               <span className="text-xs text-green-400">
@@ -257,13 +257,13 @@ export function ActionPanel ({ gameState, playerId }) {
 
             {selectedAction === 'build' && (
               <>
-                <span className="text-stone-600">|</span>
+                <span className="text-amber-900/45">|</span>
                 {buildIndustry ? (
                   <>
                     <span className="text-xs text-green-400">
                       {INDUSTRY_LABELS[buildIndustry] || buildIndustry}
                     </span>
-                    <span className="text-stone-600">|</span>
+                    <span className="text-amber-900/45">|</span>
                   </>
                 ) : (
                   <span className="text-xs text-yellow-500 animate-pulse">Pick industry below</span>
@@ -280,7 +280,7 @@ export function ActionPanel ({ gameState, playerId }) {
 
             {selectedAction === 'network' && (
               <>
-                <span className="text-stone-600">|</span>
+                <span className="text-amber-900/45">|</span>
                 {connectionTargets.length > 0 ? (
                   <span className="text-xs text-green-400">Link selected</span>
                 ) : (
@@ -291,7 +291,7 @@ export function ActionPanel ({ gameState, playerId }) {
 
             <button
               onClick={() => setShowDebug(!showDebug)}
-              className="ml-auto text-[10px] px-1.5 py-0.5 text-stone-500 hover:text-stone-300 bg-stone-800 rounded"
+              className="ml-auto rounded-md border border-stone-600/40 bg-stone-900/80 px-2 py-0.5 text-[10px] text-stone-400 transition hover:text-amber-100/80"
             >
               {showDebug ? 'Hide' : 'Debug'}
             </button>
@@ -316,12 +316,12 @@ export function ActionPanel ({ gameState, playerId }) {
                     key={ind}
                     onClick={() => setBuildIndustry(ind)}
                     disabled={!isEnabled}
-                    className={`px-2 py-1 rounded text-xs transition-colors ${
+                    className={`rounded-md border px-2 py-1 text-xs font-medium transition ${
                       buildIndustry === ind
-                        ? 'bg-amber-600 text-white ring-1 ring-amber-400'
+                        ? 'border-amber-400/60 bg-gradient-to-b from-amber-500 to-amber-800 text-white shadow-md shadow-amber-950/40'
                         : isEnabled
-                          ? 'bg-stone-700 text-stone-300 hover:bg-stone-600'
-                          : 'bg-stone-800 text-stone-600 cursor-not-allowed'
+                          ? 'border-stone-600/40 bg-gradient-to-b from-stone-600 to-stone-800 text-stone-100 hover:from-stone-500 hover:to-stone-700'
+                          : 'cursor-not-allowed border-stone-800 bg-stone-900/60 text-stone-600'
                     }`}
                   >
                     {label}
@@ -351,10 +351,10 @@ export function ActionPanel ({ gameState, playerId }) {
                         setDevelopIndustries([...developIndustries, ind])
                       }
                     }}
-                    className={`px-2 py-1 rounded text-xs transition-colors ${
+                    className={`rounded-md border px-2 py-1 text-xs font-medium transition ${
                       isSelected
-                        ? 'bg-amber-600 text-white ring-1 ring-amber-400'
-                        : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+                        ? 'border-amber-400/60 bg-gradient-to-b from-amber-500 to-amber-800 text-white shadow-md'
+                        : 'border-stone-600/40 bg-gradient-to-b from-stone-600 to-stone-800 text-stone-100 hover:from-stone-500 hover:to-stone-700'
                     }`}
                   >
                     {INDUSTRY_LABELS[ind] || ind} (L{tiles[0].level})
@@ -397,10 +397,10 @@ export function ActionPanel ({ gameState, playerId }) {
                           }])
                         }
                       }}
-                      className={`px-2 py-1 rounded text-xs transition-colors ${
+                      className={`rounded-md border px-2 py-1 text-xs font-medium transition ${
                         isSel
-                          ? 'bg-amber-600 text-white ring-1 ring-amber-400'
-                          : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+                          ? 'border-amber-400/60 bg-gradient-to-b from-amber-500 to-amber-800 text-white shadow-md'
+                          : 'border-stone-600/40 bg-gradient-to-b from-stone-600 to-stone-800 text-stone-100 hover:from-stone-500 hover:to-stone-700'
                       }`}
                     >
                       L{tile.level} {INDUSTRY_LABELS[tile.industry] || tile.industry}
@@ -418,16 +418,16 @@ export function ActionPanel ({ gameState, playerId }) {
           <div className="flex items-center gap-2">
             <button
               onClick={handleCancel}
-              className="px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-300 rounded text-xs transition-colors"
+              className="rounded-lg border border-stone-600/40 bg-gradient-to-b from-stone-600 to-stone-800 px-3 py-2 text-xs font-semibold text-stone-200 shadow-sm transition hover:from-stone-500 hover:to-stone-700 active:scale-[0.99]"
             >
               Cancel
             </button>
             <button
               onClick={handleConfirm}
-              className={`px-4 py-1.5 rounded text-xs font-medium transition-all ${
+              className={`rounded-lg border px-4 py-2 text-xs font-bold transition active:scale-[0.99] ${
                 isReady
-                  ? 'bg-amber-600 hover:bg-amber-500 text-white ring-1 ring-amber-400'
-                  : 'bg-stone-700 text-stone-400 hover:bg-stone-600'
+                  ? 'border-amber-400/50 bg-gradient-to-b from-amber-500 to-amber-900 text-amber-50 shadow-lg shadow-amber-950/40 hover:from-amber-400 hover:to-amber-800'
+                  : 'cursor-not-allowed border-stone-700 bg-stone-800/80 text-stone-500'
               }`}
             >
               Confirm
@@ -443,7 +443,7 @@ export function ActionPanel ({ gameState, playerId }) {
 
       {/* Debug overlay */}
       {showDebug && (
-        <div className="mt-2 p-2 bg-stone-950 border border-stone-700 rounded text-[10px] font-mono text-stone-400 space-y-1 max-h-48 overflow-auto">
+        <div className="mt-2 max-h-48 space-y-1 overflow-auto rounded-lg border border-stone-700/60 bg-[#080706] p-2 font-mono text-[10px] text-stone-400 shadow-inner">
           <div className="text-stone-500 font-bold mb-1">-- DEBUG --</div>
           <div>action: <span className="text-amber-400">{selectedAction || 'none'}</span></div>
           <div>targetingMode: <span className="text-cyan-400">{useGameStore.getState().targetingMode || 'none'}</span></div>

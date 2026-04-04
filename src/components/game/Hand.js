@@ -20,22 +20,26 @@ export function Hand ({ cards, playerId }) {
 
   if (!cards || cards.length === 0) {
     return (
-      <div className="px-4 py-2 text-sm text-stone-500">
+      <div className="px-4 py-3 text-sm text-amber-100/35">
         No cards in hand
       </div>
     )
   }
 
   return (
-    <div className={`px-4 py-2 transition-colors ${needsCard ? 'bg-amber-900/20' : ''}`}>
+    <div
+      className={`px-4 py-3 transition-colors ${
+        needsCard ? 'bg-gradient-to-r from-amber-950/40 via-transparent to-amber-950/20' : ''
+      }`}
+    >
       {needsCard && (
-        <p className="text-xs text-amber-400 mb-1 animate-pulse">
+        <p className="mb-2 text-xs font-medium text-amber-300/90 animate-pulse">
           {validCardIds
             ? `Select a valid card (${validCardIds.size} available):`
             : 'Select a card to use for this action:'}
         </p>
       )}
-      <div className="flex gap-1.5 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto pb-1">
         {cards.map(card => {
           const isSelected = selectedCard === card.id
           const isValid = !validCardIds || validCardIds.has(card.id)
@@ -49,14 +53,14 @@ export function Hand ({ cards, playerId }) {
                 setSelectedCard(isSelected ? null : card.id)
               }}
               title={isDisabled ? 'Cannot use this card for the selected location' : undefined}
-              className={`flex-shrink-0 px-3 py-2 rounded text-xs font-medium transition-all border ${
+              className={`flex-shrink-0 rounded-lg border px-3 py-2 text-xs font-semibold transition-all ${
                 isSelected
-                  ? 'bg-amber-600 text-white border-amber-400 -translate-y-1 shadow-lg shadow-amber-900/50'
+                  ? '-translate-y-1 border-amber-300/70 bg-gradient-to-b from-amber-500 to-amber-900 text-white shadow-xl shadow-amber-950/50 ring-1 ring-amber-400/40'
                   : isDisabled
-                    ? 'bg-stone-800/50 text-stone-600 border-stone-700 cursor-not-allowed opacity-40'
+                    ? 'cursor-not-allowed border-stone-800 bg-stone-900/40 text-stone-600 opacity-45'
                     : needsCard && isValid
-                      ? 'bg-stone-700 text-stone-200 border-amber-700/50 hover:bg-stone-600 hover:border-amber-500'
-                      : 'bg-stone-700 text-stone-300 border-stone-600 hover:bg-stone-600'
+                      ? 'border-amber-600/45 bg-gradient-to-b from-stone-600 to-stone-800 text-[#f0ebe3] shadow-md hover:from-stone-500 hover:to-stone-700 hover:border-amber-500/55'
+                      : 'border-stone-600/50 bg-gradient-to-b from-stone-700 to-stone-900 text-stone-200 shadow-sm hover:from-stone-600 hover:to-stone-800'
               }`}
             >
               {card.type === 'location' && (
