@@ -1,0 +1,12 @@
+---
+description: Git commit/push — omit placeholder #16874 in commit messages (brass)
+alwaysApply: false
+---
+
+# No #16874 in commit messages
+
+**Use this rule only when** the user asked you to **commit**, **amend**, or **push** (i.e. you are writing or running a git commit with a message).
+
+In those cases, do **not** put **`#16874`** or other placeholder task IDs from unrelated workflows in the commit message. If the user gives a real issue ID for this repo, use that; otherwise omit task references.
+
+**Do not** use this rule for general coding, docs, PR descriptions, or comments unless the user explicitly tied those to a commit you are making.
