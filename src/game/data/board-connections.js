@@ -38,6 +38,8 @@ const connections = [
   { id: 'coalbrookdale-kidderminster', from: 'coalbrookdale', to: 'kidderminster', canalRoute: true, railRoute: true },
 
   // Walsall
+  { id: 'walsall-birmingham', from: 'walsall', to: 'birmingham', canalRoute: true, railRoute: true },
+  { id: 'walsall-cannock', from: 'walsall', to: 'cannock', canalRoute: true, railRoute: true },
   { id: 'walsall-tamworth', from: 'walsall', to: 'tamworth', canalRoute: false, railRoute: true },
 
   // Tamworth
@@ -52,6 +54,7 @@ const connections = [
 
   // Dudley
   { id: 'dudley-birmingham', from: 'dudley', to: 'birmingham', canalRoute: true, railRoute: true },
+  { id: 'dudley-kidderminster', from: 'dudley', to: 'kidderminster', canalRoute: true, railRoute: true },
   { id: 'dudley-wolverhampton', from: 'dudley', to: 'wolverhampton', canalRoute: true, railRoute: true },
 
   // Kidderminster (triple: kidderminster-worcester-farmBrewery2)
@@ -71,7 +74,9 @@ const connections = [
   { id: 'redditch-oxford', from: 'redditch', to: 'oxford', canalRoute: true, railRoute: true },
 
   // Birmingham
+  { id: 'birmingham-nuneaton', from: 'birmingham', to: 'nuneaton', canalRoute: false, railRoute: true },
   { id: 'birmingham-oxford', from: 'birmingham', to: 'oxford', canalRoute: true, railRoute: true },
+  { id: 'birmingham-tamworth', from: 'birmingham', to: 'tamworth', canalRoute: true, railRoute: true },
 
 ]
 

@@ -2,36 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useGameStore } from '@/store/gameStore'
-
-const LOCATION_POSITIONS = {
-  leek: { x: 340, y: 20 },
-  stokeOnTrent: { x: 260, y: 100 },
-  stone: { x: 200, y: 160 },
-  uttoxeter: { x: 350, y: 150 },
-  stafford: { x: 160, y: 230 },
-  burtonOnTrent: { x: 380, y: 230 },
-  cannock: { x: 220, y: 310 },
-  tamworth: { x: 410, y: 310 },
-  wolverhampton: { x: 140, y: 380 },
-  walsall: { x: 250, y: 380 },
-  coalbrookdale: { x: 60, y: 380 },
-  dudley: { x: 140, y: 450 },
-  birmingham: { x: 280, y: 460 },
-  nuneaton: { x: 430, y: 390 },
-  coventry: { x: 480, y: 460 },
-  kidderminster: { x: 80, y: 530 },
-  redditch: { x: 230, y: 540 },
-  worcester: { x: 120, y: 600 },
-  farmBrewery1: { x: 160, y: 300 },
-  farmBrewery2: { x: 60, y: 570 },
-  derby: { x: 460, y: 150 },
-  belper: { x: 490, y: 40 },
-  nottingham: { x: 540, y: 180 },
-  shrewsbury: { x: 10, y: 320 },
-  gloucester: { x: 80, y: 670 },
-  oxford: { x: 400, y: 570 },
-  warrington: { x: 160, y: 10 },
-}
+import { LOCATION_POSITIONS } from '@/game/data/board-location-positions'
 
 const PLAYER_COLORS = {
   red: '#ef4444',
@@ -78,12 +49,15 @@ const CONNECTION_META = {
   'wolverhampton-walsall':         { canal: true,  rail: true  },
   'coalbrookdale-shrewsbury':      { canal: true,  rail: true  },
   'coalbrookdale-kidderminster':   { canal: true,  rail: true  },
+  'walsall-birmingham':            { canal: true,  rail: true  },
+  'walsall-cannock':               { canal: true,  rail: true  },
   'walsall-tamworth':              { canal: false, rail: true  },
   'tamworth-burtonOnTrent':        { canal: true,  rail: true  },
   'tamworth-nuneaton':             { canal: true,  rail: true  },
   'nuneaton-coventry':             { canal: false, rail: true  },
   'coventry-birmingham':           { canal: true,  rail: true  },
   'dudley-birmingham':             { canal: true,  rail: true  },
+  'dudley-kidderminster':          { canal: true,  rail: true  },
   'dudley-wolverhampton':          { canal: true,  rail: true  },
   'kidderminster-worcester':       { canal: true,  rail: true  },
   'kidderminster-farmBrewery2':    { canal: true,  rail: true  },
@@ -93,7 +67,9 @@ const CONNECTION_META = {
   'gloucester-redditch':           { canal: true,  rail: true  },
   'redditch-birmingham':           { canal: false, rail: true  },
   'redditch-oxford':               { canal: true,  rail: true  },
+  'birmingham-nuneaton':           { canal: false, rail: true  },
   'birmingham-oxford':             { canal: true,  rail: true  },
+  'birmingham-tamworth':           { canal: true,  rail: true  },
 }
 
 // Unbuilt line styles per connection type

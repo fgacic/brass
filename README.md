@@ -58,3 +58,5 @@ Open `http://localhost:3000` in your browser.
 ## Game Data
 
 All game data (locations, connections, industry tiles, cards, markets, merchants) is defined in `src/game/data/`. The game engine in `src/game/engine/` operates purely on this data with no side effects.
+
+`board-location-positions.js` holds SVG `x`/`y` coordinates for each location on the client board map; ids must match `locations.js`.
