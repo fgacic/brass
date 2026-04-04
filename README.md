@@ -57,7 +57,7 @@ Dependencies are managed with **Yarn** (`yarn.lock`). Open `http://localhost:300
 
 ## Game Actions
 
-- **Build** - Place an industry tile on the board
+- **Build** - Place an industry tile on the board. The server picks the first empty slot that allows that industry, but **single-industry slots are filled before mixed slots** (e.g. coal-only before coal/manufacturer); see `validateBuild` in `src/game/engine/actions/build.js`.
 - **Network** - Place canal/rail links between locations
 - **Develop** - Remove tiles from your player mat to access higher levels
 - **Sell** - Flip cotton/manufacturer/pottery tiles at a merchant that demands that good, with a link to that merchant; all **six** non-empty demand strips from the fixed deck are always in play (see `merchants.js`). **Coal** from a newly built coal mine goes to the coal demand track only if your industry is **linked to any in-play merchant** and the track has empty slots; otherwise cubes **stay on the tile**. **Iron** from a new iron works sells into the iron market whenever there is space (no merchant link required).

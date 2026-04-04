@@ -36,13 +36,21 @@ function validateBuild (state, playerId, { cardId, locationId, industry }) {
   const locationBoard = state.board.locations[locationId]
   if (!locationBoard) return { valid: false, reason: 'Location not buildable' }
 
-  const slotIndex = locationBoard.slots.findIndex((slot, idx) => {
-    if (slot.tileId !== null) return false
+  const candidates = []
+  for (let idx = 0; idx < locationBoard.slots.length; idx++) {
+    const slot = locationBoard.slots[idx]
+    if (slot.tileId !== null) continue
     const slotDef = location.industrySlots[idx]
-    return slotDef.allowedIndustries.includes(industry)
+    if (!slotDef?.allowedIndustries?.includes(industry)) continue
+    const singleOnly = slotDef.allowedIndustries.length === 1
+    candidates.push({ idx, singleOnly })
+  }
+  if (candidates.length === 0) return { valid: false, reason: 'No available slot for this industry' }
+  candidates.sort((a, b) => {
+    if (a.singleOnly !== b.singleOnly) return a.singleOnly ? -1 : 1
+    return a.idx - b.idx
   })
-
-  if (slotIndex === -1) return { valid: false, reason: 'No available slot for this industry' }
+  const slotIndex = candidates[0].idx
 
   if (state.era === ERA.CANAL) {
     const playerHasTileHere = state.industryTilesOnBoard.some(
