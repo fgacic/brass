@@ -2,7 +2,7 @@ const { createServer } = require('http')
 const next = require('next')
 const { Server } = require('socket.io')
 const { registerSocketHandlers } = require('./src/server/socket-handlers')
-const { exec } = require('child_process')
+const { exec, spawn } = require('child_process')
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = 'localhost'
@@ -24,32 +24,45 @@ app.prepare().then(() => {
 
   httpServer.listen(port, () => {
     console.log(`> Brass: Birmingham running on http://${hostname}:${port}`)
-    console.log(`> Attempting to start ngrok tunnel...`)
+    console.log(`> Starting ngrok tunnel (port ${port})…`)
 
-    exec(`npx ngrok http ${port} --log=stdout`, (error, stdout) => {
-      if (error && error.message.includes('invalid')) {
-        console.log(`⚠️  ngrok authtoken invalid or expired`)
-        console.log(`📝 Get a new token from: https://dashboard.ngrok.com/get-started/your-authtoken`)
-        console.log(`🔑 Then run: npx ngrok authtoken YOUR_NEW_TOKEN`)
-        return
-      }
+    const ngrokEnv = { ...process.env }
+    const ngrok = spawn('npx', ['ngrok', 'http', String(port), '--log=stdout'], {
+      env: ngrokEnv,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      shell: true,
     })
 
-    setTimeout(() => {
-      exec('curl http://localhost:4040/api/tunnels 2>nul', (error, stdout) => {
-        if (!error && stdout) {
-          try {
-            const data = JSON.parse(stdout)
-            if (data.tunnels && data.tunnels.length > 0) {
-              const publicUrl = data.tunnels[0].public_url
-              console.log(`✅ 🌐 Public URL: ${publicUrl}`)
-              console.log(`> Share this URL with others to play together!`)
-            }
-          } catch (e) {
-            // ngrok not responding with valid JSON yet
+    ngrok.stderr.on('data', (chunk) => {
+      const line = chunk.toString()
+      if (line.includes('ERR_') || line.includes('ERROR')) process.stderr.write(chunk)
+    })
+
+    ngrok.on('error', (err) => {
+      console.error('> ngrok failed to start:', err.message)
+    })
+
+    const printPublicUrl = () => {
+      exec('curl -sS http://127.0.0.1:4040/api/tunnels 2>/dev/null', (error, stdout) => {
+        if (error || !stdout) return
+        try {
+          const data = JSON.parse(stdout)
+          const t = data.tunnels?.find((x) => x.proto === 'https') || data.tunnels?.[0]
+          if (t?.public_url) {
+            console.log(`✅ 🌐 Public URL: ${t.public_url}`)
+            console.log(`> Share this URL with others to play together!`)
           }
+        } catch (_) {
+          /* ngrok API not ready */
         }
       })
-    }, 3000)
+    }
+
+    let tries = 0
+    const poll = setInterval(() => {
+      tries += 1
+      printPublicUrl()
+      if (tries >= 12) clearInterval(poll)
+    }, 1500)
   })
 })

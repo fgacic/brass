@@ -16,34 +16,39 @@ function MarketRow ({ label, market, color, emptyPrice }) {
   const filled = market.filter(s => s.filled).length
   const total = market.length
 
-  const byPrice = {}
+  const priceOrder = []
+  const seenPrice = new Set()
   for (const space of market) {
-    if (!byPrice[space.price]) byPrice[space.price] = { total: 0, filled: 0 }
-    byPrice[space.price].total++
-    if (space.filled) byPrice[space.price].filled++
+    if (!seenPrice.has(space.price)) {
+      seenPrice.add(space.price)
+      priceOrder.push(space.price)
+    }
   }
 
   return (
     <div className="flex items-center gap-2">
       <span className="w-9 text-xs font-semibold text-amber-100/55">{label}</span>
       <div className="flex gap-0.5">
-        {Object.entries(byPrice).map(([price, data]) => (
-          <div key={price} className="flex flex-col items-center">
-            <div className="flex gap-px">
-              {Array.from({ length: data.total }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`h-3 w-3 rounded-sm shadow-sm ${
-                    i < data.filled
-                      ? `${color} ring-1 ring-black/30`
-                      : 'border border-stone-600/80 bg-stone-800/90'
-                  }`}
-                />
-              ))}
+        {priceOrder.map((price) => {
+          const spacesAtPrice = market.filter(s => s.price === price)
+          return (
+            <div key={price} className="flex flex-col items-center">
+              <div className="flex gap-px">
+                {spacesAtPrice.map((space, i) => (
+                  <div
+                    key={`${price}-${i}`}
+                    className={`h-3 w-3 rounded-sm shadow-sm ${
+                      space.filled
+                        ? `${color} ring-1 ring-black/30`
+                        : 'border border-stone-600/80 bg-stone-800/90'
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="mt-0.5 text-[8px] font-medium text-amber-100/40">£{price}</span>
             </div>
-            <span className="mt-0.5 text-[8px] font-medium text-amber-100/40">£{price}</span>
-          </div>
-        ))}
+          )
+        })}
       </div>
       <span className="text-xs tabular-nums text-stone-400">{filled}/{total}</span>
     </div>

@@ -39,6 +39,8 @@ yarn dev
 
 Dependencies are managed with **Yarn** (`yarn.lock`). Open `http://localhost:3000` in your browser.
 
+**Ngrok (optional):** run `npx ngrok config add-authtoken YOUR_TOKEN` once (token from [ngrok dashboard](https://dashboard.ngrok.com/get-started/your-authtoken)), or set `NGROK_AUTHTOKEN` in `.env.local` (gitignored). Then `yarn dev:ngrok` or `yarn start:ngrok`. Do not commit secrets.
+
 ## How to Play
 
 1. Create or join a game room
