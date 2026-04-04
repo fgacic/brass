@@ -3,31 +3,13 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useGameStore } from '@/store/gameStore'
 import { LOCATION_POSITIONS } from '@/game/data/board-location-positions'
-
-const PLAYER_COLORS = {
-  red: '#ef4444',
-  blue: '#3b82f6',
-  yellow: '#eab308',
-  purple: '#a855f7',
-}
-
-const INDUSTRY_COLORS = {
-  cottonMill: '#3b82f6',
-  manufacturer: '#8b5cf6',
-  coalMine: '#71717a',
-  ironWorks: '#f97316',
-  brewery: '#b45309',
-  pottery: '#14b8a6',
-}
-
-const INDUSTRY_LETTERS = {
-  cottonMill: 'C',
-  manufacturer: 'M',
-  coalMine: 'K',
-  ironWorks: 'I',
-  brewery: 'B',
-  pottery: 'P',
-}
+import {
+  PLAYER_COLOR_HEX as PLAYER_COLORS,
+  INDUSTRY_COLOR_HEX as INDUSTRY_COLORS,
+  INDUSTRY_LETTER as INDUSTRY_LETTERS,
+  INDUSTRY_LABEL,
+  INDUSTRY_LEGEND_ORDER,
+} from './boardTheme'
 
 // Static connection metadata (canal/rail flags) — must mirror board-connections.js
 const CONNECTION_META = {
@@ -607,6 +589,25 @@ export function Board ({ gameState, playerId }) {
             <span className="text-[10px] text-stone-400">{label}</span>
           </div>
         ))}
+      </div>
+
+      {/* Industry letters (match orbital badges on locations) */}
+      <div className="absolute top-2 right-2 flex flex-col gap-1 bg-stone-900/80 border border-stone-700 rounded px-2 py-1.5 pointer-events-none max-h-[min(50vh,320px)] overflow-y-auto">
+        <span className="text-[9px] text-stone-500 font-semibold uppercase tracking-wide">Industries</span>
+        {INDUSTRY_LEGEND_ORDER.map((id) => (
+          <div key={id} className="flex items-center gap-2">
+            <span
+              className="w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[9px] font-bold text-white border border-stone-800"
+              style={{ backgroundColor: INDUSTRY_COLORS[id] }}
+            >
+              {INDUSTRY_LETTERS[id]}
+            </span>
+            <span className="text-[10px] text-stone-300 leading-tight">{INDUSTRY_LABEL[id]}</span>
+          </div>
+        ))}
+        <p className="text-[8px] text-stone-500 leading-snug mt-0.5 pt-1 border-t border-stone-700/80">
+          Merchant cities use the same letters for demand.
+        </p>
       </div>
 
       {/* Zoom controls */}

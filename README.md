@@ -21,7 +21,7 @@ src/
     constants.js  # Enums and configuration
   server/         # Server layer (rooms, game manager, socket handlers)
   app/            # Next.js pages
-  components/     # React components (lobby, game board, UI)
+  components/     # React components (lobby, game board, UI; `boardTheme.js` = player/industry colors for Board + TurnInfo)
   store/          # Zustand stores
   hooks/          # React hooks (socket, game actions)
   lib/            # Socket.IO client singleton
