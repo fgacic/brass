@@ -2,6 +2,7 @@ const { ERA, PHASE, HAND_SIZE } = require('../constants')
 const { getCurrentPlayer, deepClone } = require('./state')
 const { generateDeck, shuffleDeck } = require('../data/cards')
 const { getIncomeAtPosition } = require('../data/progress-track')
+const { refillMerchantBeer } = require('../data/merchants')
 
 function advanceTurn (state) {
   const newState = deepClone(state)
@@ -116,9 +117,8 @@ function transitionToRailEra (state) {
     }
   }
 
-  // Reset merchant beer
   for (const merchant of Object.values(newState.board.merchants)) {
-    merchant.beerAvailable = true
+    refillMerchantBeer(merchant)
   }
 
   // Reshuffle all cards into new deck

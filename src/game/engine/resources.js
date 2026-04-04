@@ -81,14 +81,34 @@ function consumeIron (state, amount) {
   return { success: true, cost: totalCost }
 }
 
-function consumeBeer (state, playerId, locationId, amount, merchantLocationId) {
+function getTotalMerchantBeerAtLocation (merchant) {
+  if (!merchant) return 0
+  if (merchant.demandSlots?.length) {
+    return merchant.demandSlots.reduce((a, s) => a + (s.merchantBeerRemaining || 0), 0)
+  }
+  return merchant.merchantBeerRemaining || 0
+}
+
+function consumeBeer (state, playerId, locationId, amount, merchantLocationId, saleIndustry) {
   let remaining = amount
 
   if (merchantLocationId) {
     const merchant = state.board.merchants[merchantLocationId]
-    if (merchant && merchant.beerAvailable) {
-      merchant.beerAvailable = false
-      remaining--
+    if (merchant?.demandSlots?.length) {
+      while (remaining > 0) {
+        const idx = merchant.demandSlots.findIndex((s) =>
+          (s.merchantBeerRemaining || 0) > 0 &&
+          (!saleIndustry || (s.acceptedIndustries || []).includes(saleIndustry))
+        )
+        if (idx < 0) break
+        merchant.demandSlots[idx].merchantBeerRemaining--
+        remaining--
+      }
+    } else if (merchant) {
+      while (remaining > 0 && (merchant.merchantBeerRemaining || 0) > 0) {
+        merchant.merchantBeerRemaining--
+        remaining--
+      }
     }
   }
 
@@ -193,12 +213,20 @@ function canAffordIron (state, amount) {
   return { possible: true, cost }
 }
 
-function countAvailableBeer (state, playerId, locationId, merchantLocationId) {
+function countAvailableBeer (state, playerId, locationId, merchantLocationId, saleIndustry) {
   let total = 0
 
   if (merchantLocationId) {
     const merchant = state.board.merchants[merchantLocationId]
-    if (merchant && merchant.beerAvailable) total++
+    if (merchant?.demandSlots?.length && saleIndustry) {
+      for (const s of merchant.demandSlots) {
+        if ((s.acceptedIndustries || []).includes(saleIndustry)) {
+          total += s.merchantBeerRemaining || 0
+        }
+      }
+    } else if (merchant) {
+      total += getTotalMerchantBeerAtLocation(merchant)
+    }
   }
 
   const ownBreweries = state.industryTilesOnBoard.filter(
@@ -247,5 +275,5 @@ function moveCubesToMarket (state, tile) {
 module.exports = {
   consumeCoal, consumeIron, consumeBeer,
   flipTile, canAffordCoal, canAffordIron,
-  countAvailableBeer, moveCubesToMarket,
+  countAvailableBeer, getTotalMerchantBeerAtLocation, moveCubesToMarket,
 }

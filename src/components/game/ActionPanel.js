@@ -24,9 +24,12 @@ const INDUSTRY_LABELS = {
 }
 
 function pickMerchantAccepting (merchants, industry) {
-  const entries = Object.entries(merchants || {}).filter(([, m]) =>
-    Array.isArray(m.acceptedIndustries) && m.acceptedIndustries.includes(industry)
-  )
+  const entries = Object.entries(merchants || {}).filter(([, m]) => {
+    if (m.demandSlots?.length) {
+      return m.demandSlots.some((s) => (s.acceptedIndustries || []).includes(industry))
+    }
+    return Array.isArray(m.acceptedIndustries) && m.acceptedIndustries.includes(industry)
+  })
   entries.sort((a, b) => a[0].localeCompare(b[0]))
   return entries[0]?.[0] ?? null
 }

@@ -77,6 +77,97 @@ function parseConnectionEndpoints (connId) {
   return null
 }
 
+const MERCHANT_TRIPLE_INDUSTRIES = ['cottonMill', 'manufacturer', 'pottery']
+
+function isTripleMerchantDemand (acceptedIndustries) {
+  const acc = acceptedIndustries || []
+  if (acc.length !== 3) return false
+  const set = new Set(acc)
+  return MERCHANT_TRIPLE_INDUSTRIES.every((id) => set.has(id))
+}
+
+/** SVG path for a pie wedge: center (cx,cy), radius r, start angle deg, sweep deg (clockwise). */
+function pieSectorPath (cx, cy, r, startDeg, sweepDeg) {
+  const rad = Math.PI / 180
+  const x1 = cx + r * Math.cos(startDeg * rad)
+  const y1 = cy + r * Math.sin(startDeg * rad)
+  const x2 = cx + r * Math.cos((startDeg + sweepDeg) * rad)
+  const y2 = cy + r * Math.sin((startDeg + sweepDeg) * rad)
+  return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`
+}
+
+function labelAtPolar (cx, cy, dist, deg) {
+  const rad = (deg * Math.PI) / 180
+  return { x: cx + dist * Math.cos(rad), y: cy + dist * Math.sin(rad) }
+}
+
+/**
+ * Foreign-market demand badges: single-industry circles or one triple-demand pie (C/M/P).
+ * Uses native SVG title elements for hover tooltips.
+ */
+function renderMerchantDemandBadges (pos, baseR, slots, keyPrefix) {
+  if (!slots.length) return null
+  const pieR = 10
+  return (
+    <g>
+      {slots.map((slot, idx) => {
+        const total = slots.length
+        const spreadDeg = total === 1 ? 0 : total === 2 ? 60 : total === 3 ? 55 : 42
+        const startDeg = -90 - spreadDeg * (total - 1) / 2
+        const angleDeg = startDeg + idx * spreadDeg
+        const angleRad = angleDeg * Math.PI / 180
+        const orbitR = baseR + 20
+        const cx = pos.x + Math.cos(angleRad) * orbitR
+        const cy = pos.y + Math.sin(angleRad) * orbitR
+
+        if (slot.demandKind === 'tripleForeign') {
+          const c = INDUSTRY_COLORS.cottonMill || '#3b82f6'
+          const m = INDUSTRY_COLORS.manufacturer || '#8b5cf6'
+          const p = INDUSTRY_COLORS.pottery || '#14b8a6'
+          const w = labelAtPolar(cx, cy, 5.2, -30)
+          const wM = labelAtPolar(cx, cy, 5.2, 90)
+          const wP = labelAtPolar(cx, cy, 5.2, 210)
+          return (
+            <g key={`${keyPrefix}-${idx}`} pointerEvents="all" cursor="help">
+              <title>
+                Foreign market: accepts cotton, manufacturer, and pottery. One merchant beer for this space.
+              </title>
+              <circle cx={cx} cy={cy} r={pieR + 3} fill="transparent" />
+              <path d={pieSectorPath(cx, cy, pieR, -90, 120)} fill={c} stroke="#1c1917" strokeWidth={1.2} />
+              <path d={pieSectorPath(cx, cy, pieR, 30, 120)} fill={m} stroke="#1c1917" strokeWidth={1.2} />
+              <path d={pieSectorPath(cx, cy, pieR, 150, 120)} fill={p} stroke="#1c1917" strokeWidth={1.2} />
+              <circle cx={cx} cy={cy} r={pieR} fill="none" stroke="#1c1917" strokeWidth={1.5} />
+              <text x={w.x} y={w.y + 0.5} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="6" fontWeight="bold" pointerEvents="none">
+                {INDUSTRY_LETTERS.cottonMill}
+              </text>
+              <text x={wM.x} y={wM.y + 0.5} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="6" fontWeight="bold" pointerEvents="none">
+                {INDUSTRY_LETTERS.manufacturer}
+              </text>
+              <text x={wP.x} y={wP.y + 0.5} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="6" fontWeight="bold" pointerEvents="none">
+                {INDUSTRY_LETTERS.pottery}
+              </text>
+            </g>
+          )
+        }
+
+        const ind = slot.allowedIndustries?.[0]
+        if (!ind) return null
+        const label = INDUSTRY_LABEL[ind] || ind
+        return (
+          <g key={`${keyPrefix}-${idx}`} pointerEvents="all" cursor="help">
+            <title>{`Foreign market: ${label}`}</title>
+            <circle cx={cx} cy={cy} r={12} fill="transparent" />
+            <circle cx={cx} cy={cy} r={9} fill={INDUSTRY_COLORS[ind] || '#555'} stroke="#1c1917" strokeWidth={1.5} />
+            <text x={cx} y={cy + 0.5} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="8" fontWeight="bold" pointerEvents="none">
+              {INDUSTRY_LETTERS[ind] || '?'}
+            </text>
+          </g>
+        )
+      })}
+    </g>
+  )
+}
+
 /** Orbital industry badges (same layout as buildable location slots). */
 function renderOrbitalSlotBadges (pos, baseR, slots, keyPrefix) {
   if (!slots.length) return null
@@ -460,11 +551,18 @@ export function Board ({ gameState, playerId }) {
 
           const slots = boardLoc?.slots || []
           const merchantDemandSlots = merchantData
-            ? (merchantData.acceptedIndustries || []).map((ind) => ({
-              allowedIndustries: [ind],
-              tileId: null,
-            }))
+            ? (merchantData.demandSlots || []).map((slot) => {
+              const acc = slot.acceptedIndustries || []
+              if (isTripleMerchantDemand(acc)) {
+                return { demandKind: 'tripleForeign', allowedIndustries: acc, tileId: null }
+              }
+              if (acc.length === 0) return null
+              return { demandKind: 'single', allowedIndustries: [acc[0]], tileId: null }
+            }).filter(Boolean)
             : []
+          const merchantBeerTotal = merchantData?.demandSlots?.length
+            ? merchantData.demandSlots.reduce((a, s) => a + (s.merchantBeerRemaining || 0), 0)
+            : (merchantData?.merchantBeerRemaining || 0)
 
           return (
             <g key={locId}
@@ -501,19 +599,21 @@ export function Board ({ gameState, playerId }) {
               {/* Buildable slots (towns/cities) or merchant demand — same orbital badge style */}
               {!isMerchant && slots.length > 0 && renderOrbitalSlotBadges(pos, baseR, slots, `slot-${locId}`)}
               {isMerchant && merchantDemandSlots.length > 0 &&
-                renderOrbitalSlotBadges(pos, baseR, merchantDemandSlots, `merch-${locId}`)}
+                renderMerchantDemandBadges(pos, baseR, merchantDemandSlots, `merch-${locId}`)}
 
-              {isMerchant && merchantData?.beerAvailable && (
-                <circle
-                  cx={pos.x + 16}
-                  cy={pos.y - 10}
-                  r={4}
-                  fill="#ca8a04"
-                  stroke="#fbbf24"
-                  strokeWidth={1}
-                  pointerEvents="none"
-                />
-              )}
+              {isMerchant && merchantData && merchantBeerTotal > 0 &&
+                [...Array(merchantBeerTotal)].map((_, i) => (
+                  <circle
+                    key={`merch-beer-${i}`}
+                    cx={pos.x + 10 + i * 9}
+                    cy={pos.y - 10}
+                    r={3.5}
+                    fill="#ca8a04"
+                    stroke="#fbbf24"
+                    strokeWidth={0.8}
+                    pointerEvents="none"
+                  />
+                ))}
 
               {/* Placed industry tiles */}
               {tilesHere.map((tile, idx) => {
@@ -606,7 +706,7 @@ export function Board ({ gameState, playerId }) {
           </div>
         ))}
         <p className="text-[8px] text-stone-500 leading-snug mt-0.5 pt-1 border-t border-stone-700/80">
-          Merchant cities use the same letters for demand.
+          Merchant demand: letter discs for one good; a three-part C/M/P disc is one foreign market that accepts cotton, manufacturer, and pottery (hover for tooltip).
         </p>
       </div>
 

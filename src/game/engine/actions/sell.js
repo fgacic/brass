@@ -2,6 +2,7 @@ const { INDUSTRY } = require('../../constants')
 const { deepClone, getPlayerById } = require('../state')
 const { areConnected } = require('../pathfinding')
 const { consumeBeer, countAvailableBeer, flipTile } = require('../resources')
+const { merchantAcceptsIndustry, getTotalMerchantBeerRemaining } = require('../../data/merchants')
 const { advanceTurn } = require('../turn')
 const { advanceIncomeMarker } = require('../../data/progress-track')
 
@@ -26,8 +27,7 @@ function validateSell (state, playerId, { cardId, tileSells }) {
     const merchant = state.board.merchants[sell.merchantLocationId]
     if (!merchant) return { valid: false, reason: 'Invalid merchant location' }
 
-    const accepts = merchant.acceptedIndustries || []
-    if (!accepts.includes(tile.industry)) {
+    if (!merchantAcceptsIndustry(merchant, tile.industry)) {
       return { valid: false, reason: 'Merchant does not accept this industry' }
     }
 
@@ -37,7 +37,9 @@ function validateSell (state, playerId, { cardId, tileSells }) {
 
     const beerNeeded = tile.beerCost || 0
     if (beerNeeded > 0) {
-      const availableBeer = countAvailableBeer(state, playerId, tile.locationId, sell.merchantLocationId)
+      const availableBeer = countAvailableBeer(
+        state, playerId, tile.locationId, sell.merchantLocationId, tile.industry
+      )
       if (availableBeer < beerNeeded) return { valid: false, reason: 'Not enough beer' }
     }
   }
@@ -70,9 +72,13 @@ function executeSell (state, playerId, { cardId, tileSells }) {
     let usedMerchantBeer = false
 
     if (beerNeeded > 0) {
-      if (merchant.beerAvailable && sell.useMerchantBeer !== false) {
-        usedMerchantBeer = true
-        consumeBeer(newState, playerId, tile.locationId, beerNeeded, sell.merchantLocationId)
+      const beforeBeer = getTotalMerchantBeerRemaining(merchant)
+      const tryMerchant = sell.useMerchantBeer !== false && beforeBeer > 0
+      if (tryMerchant) {
+        consumeBeer(
+          newState, playerId, tile.locationId, beerNeeded, sell.merchantLocationId, tile.industry
+        )
+        usedMerchantBeer = getTotalMerchantBeerRemaining(merchant) < beforeBeer
       } else {
         consumeBeer(newState, playerId, tile.locationId, beerNeeded, null)
       }
