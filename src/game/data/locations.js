@@ -1,12 +1,12 @@
-const { INDUSTRY, LOCATION_TYPE } = require('../constants')
+const { INDUSTRY, LOCATION_TYPE } = require("../constants");
 
-const I = INDUSTRY
+const I = INDUSTRY;
 
 const locations = {
   // === CITIES (2 link VP) ===
   birmingham: {
-    id: 'birmingham',
-    name: 'Birmingham',
+    id: "birmingham",
+    name: "Birmingham",
     type: LOCATION_TYPE.CITY,
     linkVP: 2,
     minPlayers: 2,
@@ -18,20 +18,20 @@ const locations = {
     ],
   },
   coventry: {
-    id: 'coventry',
-    name: 'Coventry',
+    id: "coventry",
+    name: "Coventry",
     type: LOCATION_TYPE.CITY,
     linkVP: 2,
     minPlayers: 2,
     industrySlots: [
-      { allowedIndustries: [I.POTTERY, I.MANUFACTURER] },
+      { allowedIndustries: [I.POTTERY] },
       { allowedIndustries: [I.COAL_MINE, I.IRON_WORKS] },
-      { allowedIndustries: [I.MANUFACTURER] },
+      { allowedIndustries: [I.MANUFACTURER, I.COAL_MINE] },
     ],
   },
   derby: {
-    id: 'derby',
-    name: 'Derby',
+    id: "derby",
+    name: "Derby",
     type: LOCATION_TYPE.CITY,
     linkVP: 2,
     minPlayers: 3,
@@ -42,8 +42,8 @@ const locations = {
     ],
   },
   nottingham: {
-    id: 'nottingham',
-    name: 'Nottingham',
+    id: "nottingham",
+    name: "Nottingham",
     type: LOCATION_TYPE.MERCHANT,
     linkVP: 0,
     minPlayers: 2,
@@ -51,20 +51,20 @@ const locations = {
     hasCoalConnection: true,
   },
   stokeOnTrent: {
-    id: 'stokeOnTrent',
-    name: 'Stoke-on-Trent',
+    id: "stokeOnTrent",
+    name: "Stoke-on-Trent",
     type: LOCATION_TYPE.CITY,
     linkVP: 2,
     minPlayers: 2,
     industrySlots: [
-      { allowedIndustries: [I.POTTERY, I.MANUFACTURER] },
-      { allowedIndustries: [I.COTTON_MILL, I.IRON_WORKS] },
+      { allowedIndustries: [I.COTTON_MILL, I.MANUFACTURER] },
+      { allowedIndustries: [I.POTTERY, I.IRON_WORKS] },
       { allowedIndustries: [I.MANUFACTURER] },
     ],
   },
   wolverhampton: {
-    id: 'wolverhampton',
-    name: 'Wolverhampton',
+    id: "wolverhampton",
+    name: "Wolverhampton",
     type: LOCATION_TYPE.CITY,
     linkVP: 2,
     minPlayers: 2,
@@ -76,30 +76,28 @@ const locations = {
 
   // === TOWNS (1 link VP) ===
   belper: {
-    id: 'belper',
-    name: 'Belper',
+    id: "belper",
+    name: "Belper",
     type: LOCATION_TYPE.TOWN,
     linkVP: 1,
     minPlayers: 2,
     industrySlots: [
       { allowedIndustries: [I.COTTON_MILL, I.MANUFACTURER] },
-      { allowedIndustries: [I.COAL_MINE, I.POTTERY] },
+      { allowedIndustries: [I.COAL_MINE] },
+      { allowedIndustries: [I.POTTERY] },
     ],
   },
   burtonOnTrent: {
-    id: 'burtonOnTrent',
-    name: 'Burton-on-Trent',
+    id: "burtonOnTrent",
+    name: "Burton-on-Trent",
     type: LOCATION_TYPE.TOWN,
     linkVP: 1,
     minPlayers: 2,
-    industrySlots: [
-      { allowedIndustries: [I.BREWERY, I.MANUFACTURER] },
-      { allowedIndustries: [I.COAL_MINE, I.BREWERY] },
-    ],
+    industrySlots: [{ allowedIndustries: [I.COAL_MINE, I.MANUFACTURER] }],
   },
   cannock: {
-    id: 'cannock',
-    name: 'Cannock',
+    id: "cannock",
+    name: "Cannock",
     type: LOCATION_TYPE.TOWN,
     linkVP: 1,
     minPlayers: 2,
@@ -109,8 +107,8 @@ const locations = {
     ],
   },
   coalbrookdale: {
-    id: 'coalbrookdale',
-    name: 'Coalbrookdale',
+    id: "coalbrookdale",
+    name: "Coalbrookdale",
     type: LOCATION_TYPE.TOWN,
     linkVP: 1,
     minPlayers: 2,
@@ -121,19 +119,20 @@ const locations = {
     ],
   },
   dudley: {
-    id: 'dudley',
-    name: 'Dudley',
+    id: "dudley",
+    name: "Dudley",
     type: LOCATION_TYPE.TOWN,
     linkVP: 1,
     minPlayers: 2,
     industrySlots: [
-      { allowedIndustries: [I.COAL_MINE] },
+      { allowedIndustries: [I.COTTON_MILL, I.BREWERY] },
+      { allowedIndustries: [I.COTTON_MILL, I.MANUFACTURER] },
       { allowedIndustries: [I.IRON_WORKS] },
     ],
   },
   kidderminster: {
-    id: 'kidderminster',
-    name: 'Kidderminster',
+    id: "kidderminster",
+    name: "Kidderminster",
     type: LOCATION_TYPE.TOWN,
     linkVP: 1,
     minPlayers: 2,
@@ -143,8 +142,8 @@ const locations = {
     ],
   },
   leek: {
-    id: 'leek',
-    name: 'Leek',
+    id: "leek",
+    name: "Leek",
     type: LOCATION_TYPE.TOWN,
     linkVP: 1,
     minPlayers: 3,
@@ -154,19 +153,19 @@ const locations = {
     ],
   },
   nuneaton: {
-    id: 'nuneaton',
-    name: 'Nuneaton',
+    id: "nuneaton",
+    name: "Nuneaton",
     type: LOCATION_TYPE.TOWN,
     linkVP: 1,
     minPlayers: 3,
     industrySlots: [
-      { allowedIndustries: [I.COTTON_MILL, I.BREWERY] },
-      { allowedIndustries: [I.COAL_MINE, I.MANUFACTURER] },
+      { allowedIndustries: [I.MANUFACTURER, I.BREWERY] },
+      { allowedIndustries: [I.COAL_MINE, I.COTTON_MILL] },
     ],
   },
   redditch: {
-    id: 'redditch',
-    name: 'Redditch',
+    id: "redditch",
+    name: "Redditch",
     type: LOCATION_TYPE.TOWN,
     linkVP: 1,
     minPlayers: 2,
@@ -176,30 +175,30 @@ const locations = {
     ],
   },
   stafford: {
-    id: 'stafford',
-    name: 'Stafford',
+    id: "stafford",
+    name: "Stafford",
     type: LOCATION_TYPE.TOWN,
     linkVP: 1,
     minPlayers: 2,
     industrySlots: [
-      { allowedIndustries: [I.POTTERY, I.MANUFACTURER] },
-      { allowedIndustries: [I.BREWERY] },
+      { allowedIndustries: [I.COTTON_MILL, I.BREWERY] },
+      { allowedIndustries: [I.POTTERY] },
     ],
   },
   stone: {
-    id: 'stone',
-    name: 'Stone',
+    id: "stone",
+    name: "Stone",
     type: LOCATION_TYPE.TOWN,
     linkVP: 1,
     minPlayers: 3,
     industrySlots: [
       { allowedIndustries: [I.COTTON_MILL, I.BREWERY] },
-      { allowedIndustries: [I.COTTON_MILL, I.MANUFACTURER] },
+      { allowedIndustries: [I.COAL_MINE, I.MANUFACTURER] },
     ],
   },
   tamworth: {
-    id: 'tamworth',
-    name: 'Tamworth',
+    id: "tamworth",
+    name: "Tamworth",
     type: LOCATION_TYPE.TOWN,
     linkVP: 1,
     minPlayers: 2,
@@ -209,8 +208,8 @@ const locations = {
     ],
   },
   uttoxeter: {
-    id: 'uttoxeter',
-    name: 'Uttoxeter',
+    id: "uttoxeter",
+    name: "Uttoxeter",
     type: LOCATION_TYPE.TOWN,
     linkVP: 1,
     minPlayers: 2,
@@ -220,19 +219,19 @@ const locations = {
     ],
   },
   walsall: {
-    id: 'walsall',
-    name: 'Walsall',
+    id: "walsall",
+    name: "Walsall",
     type: LOCATION_TYPE.TOWN,
     linkVP: 1,
     minPlayers: 2,
     industrySlots: [
-      { allowedIndustries: [I.BRASS, I.MANUFACTURER] },
       { allowedIndustries: [I.IRON_WORKS, I.MANUFACTURER] },
+      { allowedIndustries: [I.BREWERY, I.MANUFACTURER] },
     ],
   },
   worcester: {
-    id: 'worcester',
-    name: 'Worcester',
+    id: "worcester",
+    name: "Worcester",
     type: LOCATION_TYPE.TOWN,
     linkVP: 1,
     minPlayers: 2,
@@ -244,30 +243,26 @@ const locations = {
 
   // === FARM BREWERIES ===
   farmBrewery1: {
-    id: 'farmBrewery1',
-    name: 'Farm Brewery (Cannock)',
+    id: "farmBrewery1",
+    name: "Farm Brewery (Cannock)",
     type: LOCATION_TYPE.FARM_BREWERY,
     linkVP: 1,
     minPlayers: 2,
-    industrySlots: [
-      { allowedIndustries: [I.BREWERY] },
-    ],
+    industrySlots: [{ allowedIndustries: [I.BREWERY] }],
   },
   farmBrewery2: {
-    id: 'farmBrewery2',
-    name: 'Farm Brewery (Kidderminster)',
+    id: "farmBrewery2",
+    name: "Farm Brewery (Kidderminster)",
     type: LOCATION_TYPE.FARM_BREWERY,
     linkVP: 1,
     minPlayers: 2,
-    industrySlots: [
-      { allowedIndustries: [I.BREWERY] },
-    ],
+    industrySlots: [{ allowedIndustries: [I.BREWERY] }],
   },
 
   // === MERCHANT LOCATIONS ===
   shrewsbury: {
-    id: 'shrewsbury',
-    name: 'Shrewsbury',
+    id: "shrewsbury",
+    name: "Shrewsbury",
     type: LOCATION_TYPE.MERCHANT,
     linkVP: 0,
     minPlayers: 2,
@@ -275,8 +270,8 @@ const locations = {
     hasCoalConnection: true,
   },
   gloucester: {
-    id: 'gloucester',
-    name: 'Gloucester',
+    id: "gloucester",
+    name: "Gloucester",
     type: LOCATION_TYPE.MERCHANT,
     linkVP: 0,
     minPlayers: 2,
@@ -284,8 +279,8 @@ const locations = {
     hasCoalConnection: true,
   },
   oxford: {
-    id: 'oxford',
-    name: 'Oxford',
+    id: "oxford",
+    name: "Oxford",
     type: LOCATION_TYPE.MERCHANT,
     linkVP: 0,
     minPlayers: 2,
@@ -293,27 +288,29 @@ const locations = {
     hasCoalConnection: true,
   },
   warrington: {
-    id: 'warrington',
-    name: 'Warrington',
+    id: "warrington",
+    name: "Warrington",
     type: LOCATION_TYPE.MERCHANT,
     linkVP: 0,
     minPlayers: 2,
     industrySlots: [],
     hasCoalConnection: true,
   },
-}
+};
 
 // Fix walsall - BRASS is not an industry, should be COTTON_MILL
-locations.walsall.industrySlots[0] = { allowedIndustries: [I.COTTON_MILL, I.MANUFACTURER] }
+locations.walsall.industrySlots[0] = {
+  allowedIndustries: [I.COTTON_MILL, I.MANUFACTURER],
+};
 
-function getBuildableLocations () {
+function getBuildableLocations() {
   return Object.values(locations).filter(
-    l => l.type !== LOCATION_TYPE.MERCHANT
-  )
+    (l) => l.type !== LOCATION_TYPE.MERCHANT
+  );
 }
 
-function getLocationById (id) {
-  return locations[id] || null
+function getLocationById(id) {
+  return locations[id] || null;
 }
 
-module.exports = { locations, getBuildableLocations, getLocationById }
+module.exports = { locations, getBuildableLocations, getLocationById };
