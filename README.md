@@ -50,7 +50,7 @@ Open `http://localhost:3000` in your browser.
 - **Build** - Place an industry tile on the board
 - **Network** - Place canal/rail links between locations
 - **Develop** - Remove tiles from your player mat to access higher levels
-- **Sell** - Flip cotton/manufacturer/pottery tiles via merchants
+- **Sell** - Flip cotton/manufacturer/pottery tiles at a merchant that demands that good, with a link to that merchant; each merchant randomly demands 0–2 of those three industries at game setup. Coal can be sold to the coal market without a merchant link; iron uses the iron market the same way.
 - **Loan** - Take £30, reduce income by 3 levels
 - **Scout** - Discard 3 cards, gain 1 wild location + 1 wild industry card
 - **Pass** - Skip the action (still discards a card)
@@ -60,3 +60,5 @@ Open `http://localhost:3000` in your browser.
 All game data (locations, connections, industry tiles, cards, markets, merchants) is defined in `src/game/data/`. The game engine in `src/game/engine/` operates purely on this data with no side effects.
 
 `board-location-positions.js` holds SVG `x`/`y` coordinates for each location on the client board map; ids must match `locations.js`.
+
+`merchants.js` assigns each active merchant city a random subset (size 0–2) of cotton/manufacturer/pottery as `acceptedIndustries`; the sell action checks that subset and network connectivity. Buying coal from the market still requires a link to any in-play merchant city.

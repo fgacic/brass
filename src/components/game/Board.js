@@ -97,6 +97,62 @@ function parseConnectionEndpoints (connId) {
   return null
 }
 
+/** Orbital industry badges (same layout as buildable location slots). */
+function renderOrbitalSlotBadges (pos, baseR, slots, keyPrefix) {
+  if (!slots.length) return null
+  return (
+    <g pointerEvents="none">
+      {slots.map((slot, idx) => {
+        const total = slots.length
+        const spreadDeg = total === 1 ? 0 : total === 2 ? 60 : total === 3 ? 55 : 42
+        const startDeg = -90 - spreadDeg * (total - 1) / 2
+        const angleDeg = startDeg + idx * spreadDeg
+        const angleRad = angleDeg * Math.PI / 180
+        const orbitR = baseR + 20
+        const cx = pos.x + Math.cos(angleRad) * orbitR
+        const cy = pos.y + Math.sin(angleRad) * orbitR
+
+        const isOccupied = slot.tileId !== null
+        if (isOccupied) return null
+
+        const industries = slot.allowedIndustries || []
+        if (industries.length === 0) return null
+
+        if (industries.length === 1) {
+          const ind = industries[0]
+          return (
+            <g key={`${keyPrefix}-${idx}`}>
+              <circle cx={cx} cy={cy} r={9} fill={INDUSTRY_COLORS[ind] || '#555'} stroke="#1c1917" strokeWidth={1.5} />
+              <text x={cx} y={cy + 0.5} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="8" fontWeight="bold">
+                {INDUSTRY_LETTERS[ind] || '?'}
+              </text>
+            </g>
+          )
+        }
+
+        const [ind0, ind1] = industries
+        return (
+          <g key={`${keyPrefix}-${idx}`}>
+            <circle cx={cx} cy={cy} r={9} fill={INDUSTRY_COLORS[ind0] || '#555'} stroke="#1c1917" strokeWidth={1.5} />
+            <path
+              d={`M ${cx} ${cy - 9} A 9 9 0 0 1 ${cx} ${cy + 9} Z`}
+              fill={INDUSTRY_COLORS[ind1] || '#555'}
+            />
+            <line x1={cx} y1={cy - 9} x2={cx} y2={cy + 9} stroke="#1c1917" strokeWidth={1} />
+            <circle cx={cx} cy={cy} r={9} fill="none" stroke="#1c1917" strokeWidth={1.5} />
+            <text x={cx - 4} y={cy + 0.5} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="6" fontWeight="bold">
+              {INDUSTRY_LETTERS[ind0] || '?'}
+            </text>
+            <text x={cx + 4} y={cy + 0.5} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="6" fontWeight="bold">
+              {INDUSTRY_LETTERS[ind1] || '?'}
+            </text>
+          </g>
+        )
+      })}
+    </g>
+  )
+}
+
 export function Board ({ gameState, playerId }) {
   const { targetingMode, selectedTargets, addTarget, selectedAction, selectedCard } = useGameStore()
   const svgRef = useRef(null)
@@ -351,11 +407,18 @@ export function Board ({ gameState, playerId }) {
             (!buildValidLocations || buildValidLocations.has(locId))
 
           const boardLoc = gameState.board.locations[locId]
+          const merchantData = isMerchant ? gameState.board.merchants?.[locId] : null
           const tilesHere = gameState.industryTilesOnBoard.filter(t => t.locationId === locId)
           const baseR = isMerchant ? 14 : isFarm ? 12 : 18
           const r = isSelected ? baseR + 3 : baseR
 
           const slots = boardLoc?.slots || []
+          const merchantDemandSlots = merchantData
+            ? (merchantData.acceptedIndustries || []).map((ind) => ({
+              allowedIndustries: [ind],
+              tileId: null,
+            }))
+            : []
 
           return (
             <g key={locId}
@@ -389,58 +452,21 @@ export function Board ({ gameState, playerId }) {
                 strokeWidth={isSelected ? 2.5 : 1.5}
               />
 
-              {/* Industry slot badges arranged orbitally */}
-              {!isMerchant && slots.length > 0 && (
-                <g pointerEvents="none">
-                  {slots.map((slot, idx) => {
-                    const total = slots.length
-                    const spreadDeg = total === 1 ? 0 : total === 2 ? 60 : total === 3 ? 55 : 42
-                    const startDeg = -90 - spreadDeg * (total - 1) / 2
-                    const angleDeg = startDeg + idx * spreadDeg
-                    const angleRad = angleDeg * Math.PI / 180
-                    const orbitR = baseR + 20
-                    const cx = pos.x + Math.cos(angleRad) * orbitR
-                    const cy = pos.y + Math.sin(angleRad) * orbitR
+              {/* Buildable slots (towns/cities) or merchant demand — same orbital badge style */}
+              {!isMerchant && slots.length > 0 && renderOrbitalSlotBadges(pos, baseR, slots, `slot-${locId}`)}
+              {isMerchant && merchantDemandSlots.length > 0 &&
+                renderOrbitalSlotBadges(pos, baseR, merchantDemandSlots, `merch-${locId}`)}
 
-                    const isOccupied = slot.tileId !== null
-                    if (isOccupied) return null
-
-                    const industries = slot.allowedIndustries || []
-                    if (industries.length === 0) return null
-
-                    if (industries.length === 1) {
-                      const ind = industries[0]
-                      return (
-                        <g key={`slot-${locId}-${idx}`}>
-                          <circle cx={cx} cy={cy} r={9} fill={INDUSTRY_COLORS[ind] || '#555'} stroke="#1c1917" strokeWidth={1.5} />
-                          <text x={cx} y={cy + 0.5} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="8" fontWeight="bold">
-                            {INDUSTRY_LETTERS[ind] || '?'}
-                          </text>
-                        </g>
-                      )
-                    }
-
-                    // Two-industry split badge
-                    const [ind0, ind1] = industries
-                    return (
-                      <g key={`slot-${locId}-${idx}`}>
-                        <circle cx={cx} cy={cy} r={9} fill={INDUSTRY_COLORS[ind0] || '#555'} stroke="#1c1917" strokeWidth={1.5} />
-                        <path
-                          d={`M ${cx} ${cy - 9} A 9 9 0 0 1 ${cx} ${cy + 9} Z`}
-                          fill={INDUSTRY_COLORS[ind1] || '#555'}
-                        />
-                        <line x1={cx} y1={cy - 9} x2={cx} y2={cy + 9} stroke="#1c1917" strokeWidth={1} />
-                        <circle cx={cx} cy={cy} r={9} fill="none" stroke="#1c1917" strokeWidth={1.5} />
-                        <text x={cx - 4} y={cy + 0.5} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="6" fontWeight="bold">
-                          {INDUSTRY_LETTERS[ind0] || '?'}
-                        </text>
-                        <text x={cx + 4} y={cy + 0.5} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="6" fontWeight="bold">
-                          {INDUSTRY_LETTERS[ind1] || '?'}
-                        </text>
-                      </g>
-                    )
-                  })}
-                </g>
+              {isMerchant && merchantData?.beerAvailable && (
+                <circle
+                  cx={pos.x + 16}
+                  cy={pos.y - 10}
+                  r={4}
+                  fill="#ca8a04"
+                  stroke="#fbbf24"
+                  strokeWidth={1}
+                  pointerEvents="none"
+                />
               )}
 
               {/* Placed industry tiles */}
@@ -498,19 +524,6 @@ export function Board ({ gameState, playerId }) {
                   </g>
                 )
               })()}
-            </g>
-          )
-        })}
-
-        {/* Merchant beer indicators */}
-        {Object.entries(gameState.board.merchants || {}).map(([locId, merchant]) => {
-          const pos = LOCATION_POSITIONS[locId]
-          if (!pos) return null
-          return (
-            <g key={`merchant-${locId}`}>
-              {merchant.beerAvailable && (
-                <circle cx={pos.x + 16} cy={pos.y - 10} r={4} fill="#ca8a04" stroke="#fbbf24" strokeWidth={1} pointerEvents="none" />
-              )}
             </g>
           )
         })}

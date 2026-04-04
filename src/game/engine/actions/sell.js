@@ -26,8 +26,10 @@ function validateSell (state, playerId, { cardId, tileSells }) {
     const merchant = state.board.merchants[sell.merchantLocationId]
     if (!merchant) return { valid: false, reason: 'Invalid merchant location' }
 
-    const merchantAccepts = merchant.tiles.some(mt => mt.acceptedIndustries.includes(tile.industry))
-    if (!merchantAccepts) return { valid: false, reason: 'Merchant does not accept this industry' }
+    const accepts = merchant.acceptedIndustries || []
+    if (!accepts.includes(tile.industry)) {
+      return { valid: false, reason: 'Merchant does not accept this industry' }
+    }
 
     if (!areConnected(state.board.links, state.era, tile.locationId, sell.merchantLocationId)) {
       return { valid: false, reason: 'Not connected to merchant' }

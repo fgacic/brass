@@ -1,17 +1,10 @@
 const { INDUSTRY } = require('../constants')
 
-const I = INDUSTRY
-
-const merchantTiles = [
-  { id: 'merch_1', acceptedIndustries: [I.MANUFACTURER, I.COTTON_MILL], bonus: null },
-  { id: 'merch_2', acceptedIndustries: [I.MANUFACTURER, I.COTTON_MILL], bonus: null },
-  { id: 'merch_3', acceptedIndustries: [I.POTTERY], bonus: null },
-  { id: 'merch_4', acceptedIndustries: [I.MANUFACTURER, I.COTTON_MILL], bonus: null },
-  { id: 'merch_5', acceptedIndustries: [I.POTTERY, I.MANUFACTURER], bonus: null },
-  { id: 'merch_6', acceptedIndustries: [I.COTTON_MILL], bonus: null },
-  { id: 'merch_7', acceptedIndustries: [I.MANUFACTURER], bonus: null },
-  { id: 'merch_8', acceptedIndustries: [I.COTTON_MILL, I.MANUFACTURER], bonus: null },
-  { id: 'merch_9', acceptedIndustries: [I.POTTERY, I.COTTON_MILL], bonus: null },
+/** Industries that use merchant cities: each active merchant rolls 0–2 of these at setup. */
+const MERCHANT_DEMAND_INDUSTRIES = [
+  INDUSTRY.COTTON_MILL,
+  INDUSTRY.MANUFACTURER,
+  INDUSTRY.POTTERY,
 ]
 
 const merchantLocations = [
@@ -35,18 +28,19 @@ function shuffleArray (arr) {
   return shuffled
 }
 
+/** 0, 1, or 2 distinct industries from MERCHANT_DEMAND_INDUSTRIES. */
+function rollAcceptedIndustries () {
+  const count = Math.floor(Math.random() * 3)
+  return shuffleArray([...MERCHANT_DEMAND_INDUSTRIES]).slice(0, count)
+}
+
 function setupMerchants (playerCount) {
   const activeLocs = getActiveMerchantLocations(playerCount)
-  const shuffledTiles = shuffleArray([...merchantTiles])
   const result = {}
 
-  for (let i = 0; i < activeLocs.length; i++) {
-    const loc = activeLocs[i]
-    const tileA = shuffledTiles[i * 2]
-    const tileB = shuffledTiles[i * 2 + 1]
-
+  for (const loc of activeLocs) {
     result[loc.locationId] = {
-      tiles: tileB ? [tileA, tileB] : [tileA],
+      acceptedIndustries: rollAcceptedIndustries(),
       bonusType: loc.bonusType,
       bonusValue: loc.bonusValue,
       beerAvailable: true,
@@ -56,4 +50,9 @@ function setupMerchants (playerCount) {
   return result
 }
 
-module.exports = { merchantTiles, merchantLocations, getActiveMerchantLocations, setupMerchants }
+module.exports = {
+  MERCHANT_DEMAND_INDUSTRIES,
+  merchantLocations,
+  getActiveMerchantLocations,
+  setupMerchants,
+}

@@ -23,6 +23,14 @@ const INDUSTRY_LABELS = {
   pottery: 'Pottery',
 }
 
+function pickMerchantAccepting (merchants, industry) {
+  const entries = Object.entries(merchants || {}).filter(([, m]) =>
+    Array.isArray(m.acceptedIndustries) && m.acceptedIndustries.includes(industry)
+  )
+  entries.sort((a, b) => a[0].localeCompare(b[0]))
+  return entries[0]?.[0] ?? null
+}
+
 function formatLocName (id) {
   if (!id) return ''
   const names = {
@@ -370,10 +378,18 @@ export function ActionPanel ({ gameState, playerId }) {
                         if (isSel) {
                           setSellTiles(sellTiles.filter(s => s.tileId !== tile.id))
                         } else {
-                          const merchants = Object.keys(gameState.board.merchants)
+                          const merchantId = pickMerchantAccepting(
+                            gameState.board.merchants,
+                            tile.industry
+                          )
+                          if (!merchantId) {
+                            setActionError('No merchant city demands this industry')
+                            return
+                          }
+                          clearActionError()
                           setSellTiles([...sellTiles, {
                             tileId: tile.id,
-                            merchantLocationId: merchants[0],
+                            merchantLocationId: merchantId,
                             useMerchantBeer: true,
                           }])
                         }
