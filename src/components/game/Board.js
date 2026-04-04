@@ -11,6 +11,7 @@ import {
   INDUSTRY_LEGEND_ORDER,
 } from './boardTheme'
 import { m, useReducedMotion } from './motionConfig'
+import { computeSlotGridGeometry } from './boardSlotGrid'
 
 // Static connection metadata (canal/rail flags) — must mirror board-connections.js
 const CONNECTION_META = {
@@ -169,58 +170,60 @@ function renderMerchantDemandBadges (pos, baseR, slots, keyPrefix) {
   )
 }
 
-/** Orbital industry badges (same layout as buildable location slots). */
-function renderOrbitalSlotBadges (pos, baseR, slots, keyPrefix) {
-  if (!slots.length) return null
+function renderSlotGridEmptyCell ({ keyPrefix, cx, cy, x, y, size, industries }) {
+  if (!industries.length) return null
+  if (industries.length === 1) {
+    const ind = industries[0]
+    return (
+      <g key={keyPrefix} pointerEvents="none">
+        <rect
+          x={x} y={y} width={size} height={size} rx={2}
+          fill="#131110" stroke="#57534e" strokeWidth={1.2}
+        />
+        <rect
+          x={x + 2} y={y + 2} width={size - 4} height={size - 4} rx={1}
+          fill={INDUSTRY_COLORS[ind] || '#555'} opacity={0.88}
+        />
+        <text
+          x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle"
+          fill="white" fontSize="8" fontWeight="bold"
+        >
+          {INDUSTRY_LETTERS[ind] || '?'}
+        </text>
+      </g>
+    )
+  }
+  const [ind0, ind1] = industries
+  const mid = x + size / 2
   return (
-    <g pointerEvents="none">
-      {slots.map((slot, idx) => {
-        const total = slots.length
-        const spreadDeg = total === 1 ? 0 : total === 2 ? 60 : total === 3 ? 55 : 42
-        const startDeg = -90 - spreadDeg * (total - 1) / 2
-        const angleDeg = startDeg + idx * spreadDeg
-        const angleRad = angleDeg * Math.PI / 180
-        const orbitR = baseR + 20
-        const cx = pos.x + Math.cos(angleRad) * orbitR
-        const cy = pos.y + Math.sin(angleRad) * orbitR
-
-        const isOccupied = slot.tileId !== null
-        if (isOccupied) return null
-
-        const industries = slot.allowedIndustries || []
-        if (industries.length === 0) return null
-
-        if (industries.length === 1) {
-          const ind = industries[0]
-          return (
-            <g key={`${keyPrefix}-${idx}`}>
-              <circle cx={cx} cy={cy} r={9} fill={INDUSTRY_COLORS[ind] || '#555'} stroke="#1c1917" strokeWidth={1.5} />
-              <text x={cx} y={cy + 0.5} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="8" fontWeight="bold">
-                {INDUSTRY_LETTERS[ind] || '?'}
-              </text>
-            </g>
-          )
-        }
-
-        const [ind0, ind1] = industries
-        return (
-          <g key={`${keyPrefix}-${idx}`}>
-            <circle cx={cx} cy={cy} r={9} fill={INDUSTRY_COLORS[ind0] || '#555'} stroke="#1c1917" strokeWidth={1.5} />
-            <path
-              d={`M ${cx} ${cy - 9} A 9 9 0 0 1 ${cx} ${cy + 9} Z`}
-              fill={INDUSTRY_COLORS[ind1] || '#555'}
-            />
-            <line x1={cx} y1={cy - 9} x2={cx} y2={cy + 9} stroke="#1c1917" strokeWidth={1} />
-            <circle cx={cx} cy={cy} r={9} fill="none" stroke="#1c1917" strokeWidth={1.5} />
-            <text x={cx - 4} y={cy + 0.5} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="6" fontWeight="bold">
-              {INDUSTRY_LETTERS[ind0] || '?'}
-            </text>
-            <text x={cx + 4} y={cy + 0.5} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="6" fontWeight="bold">
-              {INDUSTRY_LETTERS[ind1] || '?'}
-            </text>
-          </g>
-        )
-      })}
+    <g key={keyPrefix} pointerEvents="none">
+      <rect
+        x={x} y={y} width={size} height={size} rx={2}
+        fill="#131110" stroke="#57534e" strokeWidth={1.2}
+      />
+      <path
+        d={`M ${x} ${y} L ${mid} ${y} L ${mid} ${y + size} L ${x} ${y + size} Z`}
+        fill={INDUSTRY_COLORS[ind0] || '#555'}
+        opacity={0.9}
+      />
+      <path
+        d={`M ${mid} ${y} L ${x + size} ${y} L ${x + size} ${y + size} L ${mid} ${y + size} Z`}
+        fill={INDUSTRY_COLORS[ind1] || '#555'}
+        opacity={0.9}
+      />
+      <line x1={mid} y1={y} x2={mid} y2={y + size} stroke="#1c1917" strokeWidth={1} />
+      <text
+        x={cx - 3.5} y={cy + 1} textAnchor="middle" dominantBaseline="middle"
+        fill="white" fontSize="7" fontWeight="bold"
+      >
+        {INDUSTRY_LETTERS[ind0] || '?'}
+      </text>
+      <text
+        x={cx + 3.5} y={cy + 1} textAnchor="middle" dominantBaseline="middle"
+        fill="white" fontSize="7" fontWeight="bold"
+      >
+        {INDUSTRY_LETTERS[ind1] || '?'}
+      </text>
     </g>
   )
 }
@@ -622,122 +625,132 @@ export function Board ({ gameState, playerId, boardFx = null }) {
             ? merchantData.demandSlots.reduce((a, s) => a + (s.merchantBeerRemaining || 0), 0)
             : (merchantData?.merchantBeerRemaining || 0)
 
+          const useSlotGrid = !isMerchant && slots.length > 0
+          const slotGridGeo = useSlotGrid ? computeSlotGridGeometry(pos, slots.length) : null
+          const displayName = formatLocationName(locId)
+          const nameLines = displayName.split('-')
+          const SLOT_LABEL_GAP = 6
+          const SLOT_HIT_PAD = 6
+          const SLOT_HIGHLIGHT_PAD = 4
+          let slotHitBbox = null
+          let slotHighlightBbox = null
+          if (slotGridGeo) {
+            const labelH = nameLines.length * 9
+            slotHighlightBbox = {
+              x: slotGridGeo.gridLeft - SLOT_HIGHLIGHT_PAD,
+              y: slotGridGeo.gridTop - SLOT_HIGHLIGHT_PAD,
+              w: slotGridGeo.gridWidth + 2 * SLOT_HIGHLIGHT_PAD,
+              h: slotGridGeo.gridHeight + 2 * SLOT_HIGHLIGHT_PAD,
+            }
+            slotHitBbox = {
+              x: slotGridGeo.gridLeft - SLOT_HIT_PAD,
+              y: slotGridGeo.gridTop - SLOT_HIT_PAD,
+              w: slotGridGeo.gridWidth + 2 * SLOT_HIT_PAD,
+              h: slotGridGeo.gridHeight + SLOT_LABEL_GAP + labelH + 2 * SLOT_HIT_PAD,
+            }
+          }
+
           return (
             <g key={locId}
               onClick={(e) => isTargetable && handleLocationClick(e, locId)}
               className={isTargetable ? 'cursor-pointer' : ''}
             >
-              {/* Transparent hit area covers node + orbital badges */}
-              {isTargetable && (
-                <circle cx={pos.x} cy={pos.y} r={baseR + 30} fill="transparent" />
-              )}
-
-              {/* Selection glow */}
-              {isSelected && (
-                <circle cx={pos.x} cy={pos.y} r={r + 4} fill="none" stroke="#f59e0b" strokeWidth={2} opacity={0.8}>
-                  <animate attributeName="opacity" values="0.4;1;0.4" dur="1.5s" repeatCount="indefinite" />
-                </circle>
-              )}
-
-              {/* Targetable hint ring */}
-              {isTargetable && !isSelected && (
-                <circle cx={pos.x} cy={pos.y} r={baseR + 4} fill="none" stroke="#10b981" strokeWidth={2} strokeDasharray="3 3" opacity={0.8}>
-                  <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite" />
-                </circle>
-              )}
-
-              {/* Main circle */}
-              <circle
-                cx={pos.x} cy={pos.y} r={r}
-                fill={isSelected ? '#451a03' : isMerchant ? '#78350f' : isFarm ? '#365314' : '#292524'}
-                stroke={isSelected ? '#f59e0b' : isMerchant ? '#d97706' : isFarm ? '#65a30d' : '#57534e'}
-                strokeWidth={isSelected ? 2.5 : 1.5}
-              />
-
-              {/* Buildable slots (towns/cities) or merchant demand — same orbital badge style */}
-              {!isMerchant && slots.length > 0 && renderOrbitalSlotBadges(pos, baseR, slots, `slot-${locId}`)}
-              {isMerchant && merchantDemandSlots.length > 0 &&
-                renderMerchantDemandBadges(pos, baseR, merchantDemandSlots, `merch-${locId}`)}
-
-              {isMerchant && merchantData && merchantBeerTotal > 0 &&
-                [...Array(merchantBeerTotal)].map((_, i) => (
-                  <circle
-                    key={`merch-beer-${i}`}
-                    cx={pos.x + 10 + i * 9}
-                    cy={pos.y - 10}
-                    r={3.5}
-                    fill="#ca8a04"
-                    stroke="#fbbf24"
-                    strokeWidth={0.8}
-                    pointerEvents="none"
-                  />
-                ))}
-
-              {/* Placed industry tiles */}
-              {tilesHere.map((tile, idx) => {
-                const angle = (idx * 2 * Math.PI) / Math.max(tilesHere.length, 1) - Math.PI / 2
-                const radius = tilesHere.length > 1 ? 10 : 0
-                const tx = pos.x + Math.cos(angle) * radius
-                const ty = pos.y + Math.sin(angle) * radius
-
-                const ownerPlayer = gameState.players.find(p => p.id === tile.ownerId)
-                const outlineColor = ownerPlayer ? PLAYER_COLORS[ownerPlayer.color] : '#555'
-                const tilePop = boardFx?.tilePopId === tile.id
-                const tileFlip = tileFlipSet.has(tile.id)
-                const tileMotionInitial =
-                  tilePop && !reduceMotion ? { scale: 0.65, opacity: 0.88 } : false
-                const tileMotionAnimate =
-                  tilePop && !reduceMotion
-                    ? { scale: [0.65, 1.09, 1], opacity: 1, scaleY: 1 }
-                    : tileFlip && !reduceMotion
-                      ? { scale: 1, opacity: 1, scaleY: [1, 0.82, 1] }
-                      : { scale: 1, opacity: 1, scaleY: 1 }
-                const tileMotionTransition =
-                  tilePop && !reduceMotion
-                    ? { duration: 0.55, ease: 'easeOut' }
-                    : tileFlip && !reduceMotion
-                      ? { duration: 0.5, ease: 'easeInOut' }
-                      : { duration: 0 }
-
-                return (
-                  <g key={tile.id} transform={`translate(${tx}, ${ty})`}>
-                    <m.g
-                      layoutId={tilePop ? 'brass-build-pending' : undefined}
-                      style={{ transformBox: 'fill-box', transformOrigin: 'center center' }}
-                      initial={tileMotionInitial}
-                      animate={tileMotionAnimate}
-                      transition={tileMotionTransition}
-                    >
-                      <rect
-                        x={-7} y={-7} width={14} height={14} rx={2}
-                        fill={tile.isFlipped ? '#1a1a1a' : INDUSTRY_COLORS[tile.industry] || '#555'}
-                        stroke={outlineColor} strokeWidth={1.5}
-                      />
-                      <text x={0} y={1} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="7" fontWeight="bold" pointerEvents="none">
-                        {tile.level}
-                      </text>
-                      {tile.resourcesRemaining > 0 && (
-                        <text x={6} y={-6} textAnchor="middle" dominantBaseline="middle" fill="#fbbf24" fontSize="6" fontWeight="bold" pointerEvents="none">
-                          {tile.resourcesRemaining}
-                        </text>
-                      )}
-                    </m.g>
-                  </g>
-                )
-              })}
-
-              {/* Location name */}
-              {(() => {
-                const name = formatLocationName(locId)
-                const labelY = pos.y + (isMerchant ? 24 : 30)
-                const parts = name.split('-')
-                return (
+              {useSlotGrid && slotGridGeo && slotHitBbox && slotHighlightBbox && (
+                <>
                   <g pointerEvents="none">
-                    {parts.map((part, i) => (
+                    {slotGridGeo.cells.map((cell) => {
+                      const slot = slots[cell.slotIndex]
+                      if (!slot) return null
+                      const tile = slot.tileId
+                        ? tilesHere.find((t) => t.id === slot.tileId) ||
+                          tilesHere.find((t) => t.slotIndex === cell.slotIndex)
+                        : null
+                      const { cx, cy, x, y, size } = cell
+                      if (tile) {
+                        const ownerPlayer = gameState.players.find((p) => p.id === tile.ownerId)
+                        const outlineColor = ownerPlayer ? PLAYER_COLORS[ownerPlayer.color] : '#555'
+                        const tilePop = boardFx?.tilePopId === tile.id
+                        const tileFlip = tileFlipSet.has(tile.id)
+                        const tileMotionInitial =
+                          tilePop && !reduceMotion ? { scale: 0.65, opacity: 0.88 } : false
+                        const tileMotionAnimate =
+                          tilePop && !reduceMotion
+                            ? { scale: [0.65, 1.09, 1], opacity: 1, scaleY: 1 }
+                            : tileFlip && !reduceMotion
+                              ? { scale: 1, opacity: 1, scaleY: [1, 0.82, 1] }
+                              : { scale: 1, opacity: 1, scaleY: 1 }
+                        const tileMotionTransition =
+                          tilePop && !reduceMotion
+                            ? { duration: 0.55, ease: 'easeOut' }
+                            : tileFlip && !reduceMotion
+                              ? { duration: 0.5, ease: 'easeInOut' }
+                              : { duration: 0 }
+                        return (
+                          <g key={tile.id} transform={`translate(${cx}, ${cy})`}>
+                            <m.g
+                              layoutId={tilePop ? 'brass-build-pending' : undefined}
+                              style={{ transformBox: 'fill-box', transformOrigin: 'center center' }}
+                              initial={tileMotionInitial}
+                              animate={tileMotionAnimate}
+                              transition={tileMotionTransition}
+                            >
+                              <rect
+                                x={-size / 2}
+                                y={-size / 2}
+                                width={size}
+                                height={size}
+                                rx={2}
+                                fill={tile.isFlipped ? '#1a1a1a' : INDUSTRY_COLORS[tile.industry] || '#555'}
+                                stroke={outlineColor}
+                                strokeWidth={1.5}
+                              />
+                              <text
+                                x={0}
+                                y={1}
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                                fill="white"
+                                fontSize="8"
+                                fontWeight="bold"
+                                pointerEvents="none"
+                              >
+                                {tile.level}
+                              </text>
+                              {tile.resourcesRemaining > 0 && (
+                                <text
+                                  x={size / 2 - 2}
+                                  y={-size / 2 + 4}
+                                  textAnchor="middle"
+                                  dominantBaseline="middle"
+                                  fill="#fbbf24"
+                                  fontSize="6"
+                                  fontWeight="bold"
+                                  pointerEvents="none"
+                                >
+                                  {tile.resourcesRemaining}
+                                </text>
+                              )}
+                            </m.g>
+                          </g>
+                        )
+                      }
+                      return renderSlotGridEmptyCell({
+                        keyPrefix: `slot-${locId}-${cell.slotIndex}`,
+                        cx,
+                        cy,
+                        x,
+                        y,
+                        size,
+                        industries: slot.allowedIndustries || [],
+                      })
+                    })}
+                  </g>
+                  <g pointerEvents="none">
+                    {nameLines.map((part, i) => (
                       <text
                         key={i}
                         x={pos.x}
-                        y={labelY + i * 9}
+                        y={slotGridGeo.gridTop + slotGridGeo.gridHeight + SLOT_LABEL_GAP + 9 + i * 9}
                         textAnchor="middle"
                         fill={isSelected ? '#fbbf24' : '#d4cfc9'}
                         fontSize={9}
@@ -750,8 +763,169 @@ export function Board ({ gameState, playerId, boardFx = null }) {
                       </text>
                     ))}
                   </g>
-                )
-              })()}
+                  {isSelected && (
+                    <rect
+                      x={slotHighlightBbox.x}
+                      y={slotHighlightBbox.y}
+                      width={slotHighlightBbox.w}
+                      height={slotHighlightBbox.h}
+                      rx={6}
+                      fill="none"
+                      stroke="#f59e0b"
+                      strokeWidth={2}
+                      opacity={0.85}
+                      pointerEvents="none"
+                    >
+                      <animate attributeName="opacity" values="0.4;1;0.4" dur="1.5s" repeatCount="indefinite" />
+                    </rect>
+                  )}
+                  {isTargetable && !isSelected && (
+                    <rect
+                      x={slotHighlightBbox.x}
+                      y={slotHighlightBbox.y}
+                      width={slotHighlightBbox.w}
+                      height={slotHighlightBbox.h}
+                      rx={6}
+                      fill="none"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      strokeDasharray="4 4"
+                      opacity={0.8}
+                      pointerEvents="none"
+                    >
+                      <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite" />
+                    </rect>
+                  )}
+                  {isTargetable && (
+                    <rect
+                      x={slotHitBbox.x}
+                      y={slotHitBbox.y}
+                      width={slotHitBbox.w}
+                      height={slotHitBbox.h}
+                      rx={8}
+                      fill="transparent"
+                      pointerEvents="all"
+                    />
+                  )}
+                </>
+              )}
+
+              {!useSlotGrid && (
+                <>
+                  {isTargetable && (
+                    <circle cx={pos.x} cy={pos.y} r={baseR + 30} fill="transparent" />
+                  )}
+                  {isSelected && (
+                    <circle cx={pos.x} cy={pos.y} r={r + 4} fill="none" stroke="#f59e0b" strokeWidth={2} opacity={0.8}>
+                      <animate attributeName="opacity" values="0.4;1;0.4" dur="1.5s" repeatCount="indefinite" />
+                    </circle>
+                  )}
+                  {isTargetable && !isSelected && (
+                    <circle cx={pos.x} cy={pos.y} r={baseR + 4} fill="none" stroke="#10b981" strokeWidth={2} strokeDasharray="3 3" opacity={0.8}>
+                      <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite" />
+                    </circle>
+                  )}
+                  <circle
+                    cx={pos.x}
+                    cy={pos.y}
+                    r={r}
+                    fill={isSelected ? '#451a03' : isMerchant ? '#78350f' : isFarm ? '#365314' : '#292524'}
+                    stroke={isSelected ? '#f59e0b' : isMerchant ? '#d97706' : isFarm ? '#65a30d' : '#57534e'}
+                    strokeWidth={isSelected ? 2.5 : 1.5}
+                  />
+                  {isMerchant && merchantDemandSlots.length > 0 &&
+                    renderMerchantDemandBadges(pos, baseR, merchantDemandSlots, `merch-${locId}`)}
+                  {isMerchant && merchantData && merchantBeerTotal > 0 &&
+                    [...Array(merchantBeerTotal)].map((_, i) => (
+                      <circle
+                        key={`merch-beer-${i}`}
+                        cx={pos.x + 10 + i * 9}
+                        cy={pos.y - 10}
+                        r={3.5}
+                        fill="#ca8a04"
+                        stroke="#fbbf24"
+                        strokeWidth={0.8}
+                        pointerEvents="none"
+                      />
+                    ))}
+                  {tilesHere.map((tile, idx) => {
+                    const angle = (idx * 2 * Math.PI) / Math.max(tilesHere.length, 1) - Math.PI / 2
+                    const radius = tilesHere.length > 1 ? 10 : 0
+                    const tx = pos.x + Math.cos(angle) * radius
+                    const ty = pos.y + Math.sin(angle) * radius
+
+                    const ownerPlayer = gameState.players.find(p => p.id === tile.ownerId)
+                    const outlineColor = ownerPlayer ? PLAYER_COLORS[ownerPlayer.color] : '#555'
+                    const tilePop = boardFx?.tilePopId === tile.id
+                    const tileFlip = tileFlipSet.has(tile.id)
+                    const tileMotionInitial =
+                      tilePop && !reduceMotion ? { scale: 0.65, opacity: 0.88 } : false
+                    const tileMotionAnimate =
+                      tilePop && !reduceMotion
+                        ? { scale: [0.65, 1.09, 1], opacity: 1, scaleY: 1 }
+                        : tileFlip && !reduceMotion
+                          ? { scale: 1, opacity: 1, scaleY: [1, 0.82, 1] }
+                          : { scale: 1, opacity: 1, scaleY: 1 }
+                    const tileMotionTransition =
+                      tilePop && !reduceMotion
+                        ? { duration: 0.55, ease: 'easeOut' }
+                        : tileFlip && !reduceMotion
+                          ? { duration: 0.5, ease: 'easeInOut' }
+                          : { duration: 0 }
+
+                    return (
+                      <g key={tile.id} transform={`translate(${tx}, ${ty})`}>
+                        <m.g
+                          layoutId={tilePop ? 'brass-build-pending' : undefined}
+                          style={{ transformBox: 'fill-box', transformOrigin: 'center center' }}
+                          initial={tileMotionInitial}
+                          animate={tileMotionAnimate}
+                          transition={tileMotionTransition}
+                        >
+                          <rect
+                            x={-7} y={-7} width={14} height={14} rx={2}
+                            fill={tile.isFlipped ? '#1a1a1a' : INDUSTRY_COLORS[tile.industry] || '#555'}
+                            stroke={outlineColor} strokeWidth={1.5}
+                          />
+                          <text x={0} y={1} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="7" fontWeight="bold" pointerEvents="none">
+                            {tile.level}
+                          </text>
+                          {tile.resourcesRemaining > 0 && (
+                            <text x={6} y={-6} textAnchor="middle" dominantBaseline="middle" fill="#fbbf24" fontSize="6" fontWeight="bold" pointerEvents="none">
+                              {tile.resourcesRemaining}
+                            </text>
+                          )}
+                        </m.g>
+                      </g>
+                    )
+                  })}
+                  {(() => {
+                    const name = formatLocationName(locId)
+                    const labelY = pos.y + (isMerchant ? 24 : 30)
+                    const parts = name.split('-')
+                    return (
+                      <g pointerEvents="none">
+                        {parts.map((part, i) => (
+                          <text
+                            key={i}
+                            x={pos.x}
+                            y={labelY + i * 9}
+                            textAnchor="middle"
+                            fill={isSelected ? '#fbbf24' : '#d4cfc9'}
+                            fontSize={9}
+                            fontWeight={isSelected ? 'bold' : 'normal'}
+                            stroke="#1c1917"
+                            strokeWidth={2.5}
+                            paintOrder="stroke"
+                          >
+                            {part}
+                          </text>
+                        ))}
+                      </g>
+                    )
+                  })()}
+                </>
+              )}
             </g>
           )
         })}

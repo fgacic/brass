@@ -17,6 +17,8 @@ Server-authoritative model: the server owns all game state, validates every acti
 
 **Client action UI:** `gameStore` exposes `actionSubmitting` (set around `game:action` emit/ack) and `actionErrorTick` (increments on each error) for the action panel spinner. After each new `game:log` entry, `useGameStateFx` diffs board/tiles and exposes short-lived FX keys (`tilePopId`, `linkDrawId`, `tileFlipIds`, `handFlash`, etc.); game components read those props and run **Motion** animations (`Hand`, `Board`, `PlayerMat`, `TurnInfo`, `ActionPanel`). Build uses optional shared `layoutId` `brass-build-pending` on the selected hand card and the new tile when `tilePopId` matches (best-effort overlap with server updates).
 
+**Board map:** Buildable locations (cities, towns, farm breweries) use a **slot grid** in `Board.js` with layout from `boardSlotGrid.js`: square cells show industry icons when empty; when built, the cell fills with industry color, owner outline, and tile level (plus resource count when relevant). The location name sits under the grid. Merchant cities keep the circular node and foreign-market demand badges.
+
 ```
 src/
   game/           # Pure game logic (runs on server)
@@ -25,7 +27,7 @@ src/
     constants.js  # Enums and configuration
   server/         # Server layer (rooms, game manager, socket handlers)
   app/            # Next.js pages
-  components/     # React components (lobby, game board, UI; `boardTheme.js` = player/industry colors for Board + TurnInfo)
+  components/     # React components (lobby, game board, UI; `boardTheme.js`, `boardSlotGrid.js` slot layout for Board)
   store/          # Zustand stores
   hooks/          # React hooks (socket, game actions, `useGameStateFx`, `useMyTurnSound`, `useRoundAdvanceOverlay`)
   lib/            # Socket.IO client singleton
