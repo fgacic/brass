@@ -89,7 +89,7 @@ export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan })
         </span>
         <div
           ref={rowRef}
-          className="relative flex flex-wrap justify-end gap-x-4 gap-y-3 overflow-visible"
+          className="relative flex flex-wrap items-center justify-end gap-x-3 gap-y-3 overflow-visible"
         >
           {box && (
             <m.div
@@ -109,17 +109,20 @@ export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan })
               }
             />
           )}
-          {gameState.turnOrder.map((orderedPlayerId, orderIndex) => {
+          {gameState.turnOrder.flatMap((orderedPlayerId, orderIndex) => {
             const p = gameState.players.find(x => x.id === orderedPlayerId)
-            if (!p) return null
+            if (!p) return []
+
             const hex = PLAYER_COLOR_HEX[p.color] || '#78716c'
             const isCurrent = p.id === currentPlayerId
             const isYou = p.id === playerId
+            const isLast = orderIndex >= gameState.turnOrder.length - 1
+            const nextId = !isLast ? gameState.turnOrder[orderIndex + 1] : null
 
-            return (
+            const column = (
               <div
                 key={p.id}
-                className="relative z-[2] flex w-[4.75rem] flex-col items-center gap-1"
+                className="relative z-2 flex w-[4.75rem] flex-col items-center gap-1"
               >
                 <span
                   className={`flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[10px] font-bold tabular-nums ${
@@ -176,6 +179,21 @@ export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan })
                 </div>
               </div>
             )
+
+            if (isLast) return [column]
+
+            return [
+              column,
+              <div
+                key={`arrow-${p.id}-to-${nextId}`}
+                className="relative z-2 flex shrink-0 items-center text-amber-400/60"
+                aria-hidden
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" />
+                </svg>
+              </div>
+            ]
           })}
         </div>
       </div>
