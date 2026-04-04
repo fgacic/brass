@@ -1,0 +1,60 @@
+# Brass: Birmingham Online
+
+Online multiplayer implementation of the board game Brass: Birmingham for 2-4 players.
+
+## Tech Stack
+
+- **Next.js 15** - App Router, React 19
+- **Socket.IO** - Real-time multiplayer communication
+- **Zustand** - Client-side state management
+- **Tailwind CSS** - Styling
+
+## Architecture
+
+Server-authoritative model: the server owns all game state, validates every action, and broadcasts filtered updates to each player. Clients render state and send action intents.
+
+```
+src/
+  game/           # Pure game logic (runs on server)
+    data/         # Static game data (locations, industries, cards, markets, merchants)
+    engine/       # Game engine (state, actions, resources, scoring, pathfinding)
+    constants.js  # Enums and configuration
+  server/         # Server layer (rooms, game manager, socket handlers)
+  app/            # Next.js pages
+  components/     # React components (lobby, game board, UI)
+  store/          # Zustand stores
+  hooks/          # React hooks (socket, game actions)
+  lib/            # Socket.IO client singleton
+```
+
+## Setup
+
+```bash
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000` in your browser.
+
+## How to Play
+
+1. Create or join a game room
+2. Wait for 2-4 players
+3. Host starts the game
+4. Each turn: select a card, choose an action, pick targets, confirm
+5. Play through Canal Era and Rail Era
+6. Player with most VP wins
+
+## Game Actions
+
+- **Build** - Place an industry tile on the board
+- **Network** - Place canal/rail links between locations
+- **Develop** - Remove tiles from your player mat to access higher levels
+- **Sell** - Flip cotton/manufacturer/pottery tiles via merchants
+- **Loan** - Take £30, reduce income by 3 levels
+- **Scout** - Discard 3 cards, gain 1 wild location + 1 wild industry card
+- **Pass** - Skip the action (still discards a card)
+
+## Game Data
+
+All game data (locations, connections, industry tiles, cards, markets, merchants) is defined in `src/game/data/`. The game engine in `src/game/engine/` operates purely on this data with no side effects.
