@@ -1,11 +1,51 @@
 'use client'
 
+import { useLayoutEffect, useRef, useState } from 'react'
 import { PLAYER_COLOR_HEX } from './boardTheme'
 import { m, useReducedMotion } from './motionConfig'
+
+function useTurnOrderHighlightBox (currentPlayerId, turnOrderKey) {
+  const rowRef = useRef(null)
+  const slotRefs = useRef({})
+  const [box, setBox] = useState(null)
+
+  useLayoutEffect(() => {
+    const row = rowRef.current
+    if (!row) return
+
+    const measure = () => {
+      const el = currentPlayerId ? slotRefs.current[currentPlayerId] : null
+      if (!el || !row) return
+      const rowRect = row.getBoundingClientRect()
+      const r = el.getBoundingClientRect()
+      setBox({
+        left: r.left - rowRect.left,
+        top: r.top - rowRect.top,
+        width: r.width,
+        height: r.height
+      })
+    }
+
+    measure()
+    const ro = new ResizeObserver(() => measure())
+    ro.observe(row)
+    window.addEventListener('resize', measure)
+    const id = requestAnimationFrame(measure)
+    return () => {
+      cancelAnimationFrame(id)
+      ro.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [currentPlayerId, turnOrderKey])
+
+  return { rowRef, slotRefs, box }
+}
 
 export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan }) {
   const reduceMotion = useReducedMotion()
   const currentPlayerId = gameState.turnOrder[gameState.currentPlayerIndex]
+  const turnOrderKey = gameState.turnOrder.join(',')
+  const { rowRef, slotRefs, box } = useTurnOrderHighlightBox(currentPlayerId, turnOrderKey)
   const currentPlayer = gameState.players.find(p => p.id === currentPlayerId)
   const isMyTurn = currentPlayerId === playerId
   const myPlayer = gameState.players.find(p => p.id === playerId)
@@ -31,7 +71,7 @@ export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan })
     >
       <div className="flex min-w-0 flex-1 items-center gap-4">
         <span className="shrink-0 text-sm font-medium text-amber-100/55">
-          {gameState.era === 'canal' ? 'Canal era' : 'Rail era'} <span className="text-amber-900/60">·</span> Round {gameState.round}
+          {gameState.era === 'canal' ? 'Canal era' : 'Rail era'} <span className="text-amber-900/60">·</span> Turn {gameState.round}
         </span>
         <span className={`truncate text-sm font-semibold ${isMyTurn ? 'text-amber-300' : 'text-[#ddd6cc]'}`}>
           {isMyTurn ? 'Your turn' : `${currentPlayer?.name}'s turn`}
@@ -47,7 +87,28 @@ export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan })
         <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-amber-200/55">
           Turn order
         </span>
-        <div className="flex flex-wrap justify-end gap-x-4 gap-y-3">
+        <div
+          ref={rowRef}
+          className="relative flex flex-wrap justify-end gap-x-4 gap-y-3 overflow-visible"
+        >
+          {box && (
+            <m.div
+              aria-hidden
+              className="pointer-events-none absolute top-0 left-0 z-1 rounded-full border-[3px] border-amber-400/95 bg-amber-400/10 shadow-[0_0_22px_rgba(251,191,36,0.45)] ring-2 ring-amber-300/40 ring-offset-2 ring-offset-[#14100d]/90"
+              initial={false}
+              animate={{
+                left: box.left,
+                top: box.top,
+                width: box.width,
+                height: box.height
+              }}
+              transition={
+                reduceMotion
+                  ? { duration: 0 }
+                  : { type: 'spring', stiffness: 260, damping: 30, mass: 1.15 }
+              }
+            />
+          )}
           {gameState.turnOrder.map((orderedPlayerId, orderIndex) => {
             const p = gameState.players.find(x => x.id === orderedPlayerId)
             if (!p) return null
@@ -58,7 +119,7 @@ export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan })
             return (
               <div
                 key={p.id}
-                className="flex w-[4.75rem] flex-col items-center gap-1"
+                className="relative z-[2] flex w-[4.75rem] flex-col items-center gap-1"
               >
                 <span
                   className={`flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[10px] font-bold tabular-nums ${
@@ -72,11 +133,11 @@ export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan })
                 </span>
                 <div className="relative flex flex-col items-center pb-4">
                   <div
-                    className={`rounded-full ${
-                      isCurrent
-                        ? 'p-0.5 shadow-[0_0_20px_rgba(251,191,36,0.4)] ring-[3px] ring-amber-400 ring-offset-2 ring-offset-[#1a1510]/95'
-                        : 'p-0.5 ring-1 ring-stone-600/70 ring-offset-1 ring-offset-[#14100d]'
-                    }`}
+                    ref={(el) => {
+                      if (el) slotRefs.current[p.id] = el
+                      else delete slotRefs.current[p.id]
+                    }}
+                    className="rounded-full p-0.5 ring-1 ring-stone-600/75 ring-offset-1 ring-offset-[#14100d]"
                   >
                     <div
                       className="h-11 w-11 shrink-0 rounded-full border-2 border-black/45 shadow-inner shadow-black/30"

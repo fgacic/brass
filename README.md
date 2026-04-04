@@ -9,7 +9,7 @@ Online multiplayer implementation of the board game Brass: Birmingham for 2-4 pl
 - **Zustand** - Client-side state management
 - **Tailwind CSS** - Styling (warm brass / industrial palette; **DM Sans** body + **Lora** display via `next/font` in `layout.js`)
 - **Motion** (`motion` package) - Game UI transitions (hand list, board tiles/links, mat rows, turn bar, money pulse, action error shake). Wrapped in `LazyMotion` + `domMax` (layout + gestures + animations) via `src/components/game/motionConfig.js`; heavy sequences respect `useReducedMotion()`.
-- **Howler** (`howler`) - Short turn-notification chime when it becomes your turn (`useMyTurnSound` in `src/hooks/useMyTurnSound.js`, driven by `useGameStateFx`’s `myTurnFlash`). Audio file: `public/sounds/your-turn.wav` (regenerate with `node scripts/generate-turn-chime.cjs`). Playback is skipped when the user prefers reduced motion (`prefers-reduced-motion: reduce`). If the browser has not unlocked audio yet, the first successful play may occur after a `pointerdown` on the page.
+- **Howler** (`howler`) - Chime when it becomes your turn (`useMyTurnSound`, driven by `useGameStateFx`’s `myTurnFlash`); wind-up sting when the **Turn** counter advances (`gameState.round`, `RoundAdvanceOverlay` + `useRoundAdvanceOverlay`, `public/sounds/round-windup.wav`, `node scripts/generate-round-windup.cjs`). Turn clip: `public/sounds/your-turn.wav` (`node scripts/generate-turn-chime.cjs`). Playback skips under `prefers-reduced-motion: reduce`. If audio is still locked, the first successful play may follow a `pointerdown` on the page.
 
 ## Architecture
 
@@ -27,7 +27,7 @@ src/
   app/            # Next.js pages
   components/     # React components (lobby, game board, UI; `boardTheme.js` = player/industry colors for Board + TurnInfo)
   store/          # Zustand stores
-  hooks/          # React hooks (socket, game actions, `useGameStateFx` for action UI highlights, `useMyTurnSound` for turn chime)
+  hooks/          # React hooks (socket, game actions, `useGameStateFx`, `useMyTurnSound`, `useRoundAdvanceOverlay`)
   lib/            # Socket.IO client singleton
 ```
 

@@ -3,6 +3,8 @@
 import { useGameStore } from '@/store/gameStore'
 import { useGameStateFx } from '@/hooks/useGameStateFx'
 import { useMyTurnSound } from '@/hooks/useMyTurnSound'
+import { useRoundAdvanceOverlay } from '@/hooks/useRoundAdvanceOverlay'
+import { RoundAdvanceOverlay } from './RoundAdvanceOverlay'
 import { Board } from './Board'
 import { PlayerMat } from './PlayerMat'
 import { Hand } from './Hand'
@@ -17,6 +19,7 @@ export function GameView ({ playerId }) {
   const { gameState } = useGameStore()
   const boardFx = useGameStateFx(gameState, playerId)
   useMyTurnSound(boardFx.myTurnFlash)
+  const overlayRound = useRoundAdvanceOverlay(gameState)
 
   if (!gameState) {
     return (
@@ -73,6 +76,7 @@ export function GameView ({ playerId }) {
           />
         )}
       </div>
+      <RoundAdvanceOverlay round={overlayRound} />
     </div>
     </GameMotionRoot>
   )
