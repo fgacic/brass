@@ -30,11 +30,11 @@ src/
 ## Setup
 
 ```bash
-npm install
-npm run dev
+yarn install
+yarn dev
 ```
 
-Open `http://localhost:3000` in your browser.
+Dependencies are managed with **Yarn** (`yarn.lock`). Open `http://localhost:3000` in your browser.
 
 ## How to Play
 
