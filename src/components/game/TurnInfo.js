@@ -1,20 +1,33 @@
 'use client'
 
 import { PLAYER_COLOR_HEX } from './boardTheme'
+import { m, useReducedMotion } from './motionConfig'
 
-export function TurnInfo ({ gameState, playerId }) {
+export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan }) {
+  const reduceMotion = useReducedMotion()
   const currentPlayerId = gameState.turnOrder[gameState.currentPlayerIndex]
   const currentPlayer = gameState.players.find(p => p.id === currentPlayerId)
   const isMyTurn = currentPlayerId === playerId
   const myPlayer = gameState.players.find(p => p.id === playerId)
 
   return (
-    <div
+    <m.div
       className={`flex items-center justify-between gap-4 border-b px-4 py-2.5 shadow-sm ${
         isMyTurn
           ? 'border-amber-600/35 bg-gradient-to-r from-amber-950/55 via-amber-900/20 to-transparent shadow-amber-950/20'
           : 'border-amber-900/20 bg-gradient-to-r from-[#1a1510] to-[#14100d]'
       }`}
+      animate={
+        turnBarFlash && !reduceMotion
+          ? {
+            boxShadow: [
+              'inset 0 0 0 1px rgba(251, 191, 36, 0.55)',
+              'inset 0 0 0 1px transparent',
+            ],
+          }
+          : {}
+      }
+      transition={{ duration: 0.9, ease: 'easeOut' }}
     >
       <div className="flex min-w-0 items-center gap-4">
         <span className="shrink-0 text-sm font-medium text-amber-100/55">
@@ -56,12 +69,25 @@ export function TurnInfo ({ gameState, playerId }) {
                   <span className="text-[9px] font-bold uppercase text-amber-400/95">You</span>
                 )}
                 <span className="tabular-nums text-[11px] font-semibold text-amber-400">{p.vpMarker} VP</span>
-                <span className="tabular-nums text-[11px] font-semibold text-emerald-400">£{p.money}</span>
+                <m.span
+                  className="tabular-nums text-[11px] font-semibold text-emerald-400 inline-block"
+                  animate={
+                    isYou && moneyPulseLoan && !reduceMotion
+                      ? {
+                        scale: [1, 1.12, 1],
+                        color: ['rgb(52, 211, 153)', 'rgb(167, 243, 208)', 'rgb(52, 211, 153)'],
+                      }
+                      : { scale: 1 }
+                  }
+                  transition={{ duration: 0.75, ease: 'easeOut' }}
+                >
+                  £{p.money}
+                </m.span>
               </div>
             )
           })}
         </div>
       </div>
-    </div>
+    </m.div>
   )
 }

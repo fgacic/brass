@@ -10,6 +10,7 @@ import {
   INDUSTRY_LABEL,
   INDUSTRY_LEGEND_ORDER,
 } from './boardTheme'
+import { m, useReducedMotion } from './motionConfig'
 
 // Static connection metadata (canal/rail flags) — must mirror board-connections.js
 const CONNECTION_META = {
@@ -224,8 +225,9 @@ function renderOrbitalSlotBadges (pos, baseR, slots, keyPrefix) {
   )
 }
 
-export function Board ({ gameState, playerId }) {
+export function Board ({ gameState, playerId, boardFx = null }) {
   const { targetingMode, selectedTargets, addTarget, selectedAction, selectedCard } = useGameStore()
+  const reduceMotion = useReducedMotion()
   const svgRef = useRef(null)
   const [vb, setVb] = useState({ ...DEFAULT_VB })
   const panRef = useRef({ active: false, hasDragged: false, startX: 0, startY: 0, startVb: null })
@@ -381,6 +383,7 @@ export function Board ({ gameState, playerId }) {
   const resetView = useCallback(() => setVb({ ...DEFAULT_VB }), [])
 
   const drawnPairs = new Set()
+  const tileFlipSet = new Set(boardFx?.tileFlipIds || [])
 
   return (
     <div className="relative w-full h-full">
@@ -417,6 +420,7 @@ export function Board ({ gameState, playerId }) {
           const isBuilt = link.ownerId !== null
           const isSelected = selectedConnectionIds.has(connId)
           const isTargetable = targetingMode === 'connection' && !isBuilt
+          const linkJustBuilt = isBuilt && boardFx?.linkDrawId === connId
 
           const meta = CONNECTION_META[connId] || { canal: true, rail: true }
           const linkType = meta.canal && meta.rail ? 'both' : meta.canal ? 'canal' : 'rail'
@@ -448,13 +452,27 @@ export function Board ({ gameState, playerId }) {
                   onClick={(e) => handleConnectionClick(e, connId)}
                 />
               )}
-              <line
+              <m.line
                 x1={fromPos.x + nx} y1={fromPos.y + ny}
                 x2={toPos.x + nx} y2={toPos.y + ny}
                 stroke={isSelected ? '#f59e0b' : isBuilt ? ownerColor : style.stroke}
                 strokeWidth={isSelected ? 5 : isBuilt ? 4 : style.width}
                 strokeDasharray={isSelected ? 'none' : isBuilt ? 'none' : style.dash}
                 pointerEvents="none"
+                initial={
+                  linkJustBuilt && !reduceMotion
+                    ? { opacity: 0.4, strokeWidth: 2 }
+                    : false
+                }
+                animate={{
+                  opacity: 1,
+                  strokeWidth: isSelected ? 5 : isBuilt ? 4 : style.width,
+                }}
+                transition={
+                  linkJustBuilt && !reduceMotion
+                    ? { duration: 0.45, ease: 'easeOut' }
+                    : { duration: 0 }
+                }
               />
               {isSelected && (
                 <line
@@ -483,6 +501,7 @@ export function Board ({ gameState, playerId }) {
           const era = gameState.era
           const isWrongEra = (era === 'canal' && !meta.canal) || (era === 'rail' && !meta.rail)
           const isBuilt = kwLink?.ownerId != null
+          const linkJustBuiltStem = isBuilt && boardFx?.linkDrawId === trunkId
           const isSelected = selectedConnectionIds.has(trunkId)
           const isTargetable = targetingMode === 'connection' && !isBuilt
           const linkType = meta.canal && meta.rail ? 'both' : meta.canal ? 'canal' : 'rail'
@@ -507,7 +526,7 @@ export function Board ({ gameState, playerId }) {
                   onClick={(e) => handleConnectionClick(e, trunkId)}
                 />
               )}
-              <line
+              <m.line
                 x1={fPos.x}
                 y1={fPos.y}
                 x2={midX}
@@ -516,6 +535,20 @@ export function Board ({ gameState, playerId }) {
                 strokeWidth={strokeW}
                 strokeDasharray={dash}
                 pointerEvents="none"
+                initial={
+                  linkJustBuiltStem && !reduceMotion
+                    ? { opacity: 0.4, strokeWidth: 2 }
+                    : false
+                }
+                animate={{
+                  opacity: 1,
+                  strokeWidth: strokeW,
+                }}
+                transition={
+                  linkJustBuiltStem && !reduceMotion
+                    ? { duration: 0.45, ease: 'easeOut' }
+                    : { duration: 0 }
+                }
               />
               {isSelected && (
                 <line
@@ -624,22 +657,46 @@ export function Board ({ gameState, playerId }) {
 
                 const ownerPlayer = gameState.players.find(p => p.id === tile.ownerId)
                 const outlineColor = ownerPlayer ? PLAYER_COLORS[ownerPlayer.color] : '#555'
+                const tilePop = boardFx?.tilePopId === tile.id
+                const tileFlip = tileFlipSet.has(tile.id)
+                const tileMotionInitial =
+                  tilePop && !reduceMotion ? { scale: 0.65, opacity: 0.88 } : false
+                const tileMotionAnimate =
+                  tilePop && !reduceMotion
+                    ? { scale: [0.65, 1.09, 1], opacity: 1, scaleY: 1 }
+                    : tileFlip && !reduceMotion
+                      ? { scale: 1, opacity: 1, scaleY: [1, 0.82, 1] }
+                      : { scale: 1, opacity: 1, scaleY: 1 }
+                const tileMotionTransition =
+                  tilePop && !reduceMotion
+                    ? { duration: 0.55, ease: 'easeOut' }
+                    : tileFlip && !reduceMotion
+                      ? { duration: 0.5, ease: 'easeInOut' }
+                      : { duration: 0 }
 
                 return (
-                  <g key={tile.id}>
-                    <rect
-                      x={tx - 7} y={ty - 7} width={14} height={14} rx={2}
-                      fill={tile.isFlipped ? '#1a1a1a' : INDUSTRY_COLORS[tile.industry] || '#555'}
-                      stroke={outlineColor} strokeWidth={1.5}
-                    />
-                    <text x={tx} y={ty + 1} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="7" fontWeight="bold" pointerEvents="none">
-                      {tile.level}
-                    </text>
-                    {tile.resourcesRemaining > 0 && (
-                      <text x={tx + 6} y={ty - 6} textAnchor="middle" dominantBaseline="middle" fill="#fbbf24" fontSize="6" fontWeight="bold" pointerEvents="none">
-                        {tile.resourcesRemaining}
+                  <g key={tile.id} transform={`translate(${tx}, ${ty})`}>
+                    <m.g
+                      layoutId={tilePop ? 'brass-build-pending' : undefined}
+                      style={{ transformBox: 'fill-box', transformOrigin: 'center center' }}
+                      initial={tileMotionInitial}
+                      animate={tileMotionAnimate}
+                      transition={tileMotionTransition}
+                    >
+                      <rect
+                        x={-7} y={-7} width={14} height={14} rx={2}
+                        fill={tile.isFlipped ? '#1a1a1a' : INDUSTRY_COLORS[tile.industry] || '#555'}
+                        stroke={outlineColor} strokeWidth={1.5}
+                      />
+                      <text x={0} y={1} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="7" fontWeight="bold" pointerEvents="none">
+                        {tile.level}
                       </text>
-                    )}
+                      {tile.resourcesRemaining > 0 && (
+                        <text x={6} y={-6} textAnchor="middle" dominantBaseline="middle" fill="#fbbf24" fontSize="6" fontWeight="bold" pointerEvents="none">
+                          {tile.resourcesRemaining}
+                        </text>
+                      )}
+                    </m.g>
                   </g>
                 )
               })}

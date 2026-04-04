@@ -9,3 +9,5 @@
   background-color: rgba(217, 119, 6, 0.35);
   color: #fffbeb;
 }
+
+/* Action / board UI motion lives in `motion` (see `src/components/game/motionConfig.js` + `useGameStateFx`). */

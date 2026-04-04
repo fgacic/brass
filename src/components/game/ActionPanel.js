@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useGameStore } from '@/store/gameStore'
 import { useGameActions } from '@/hooks/useGameActions'
+import { m, useReducedMotion } from './motionConfig'
 
 const ACTIONS = [
   { type: 'build', label: 'Build', desc: 'Place an industry tile' },
@@ -49,9 +50,11 @@ export function ActionPanel ({ gameState, playerId }) {
   const {
     selectedAction, setSelectedAction, selectedCard,
     setTargetingMode, selectedTargets, actionError,
+    actionSubmitting, actionErrorTick,
     resetAction, setActionError, clearActionError,
   } = useGameStore()
   const { build, network, develop, sell, loan, scout, pass } = useGameActions()
+  const reduceMotion = useReducedMotion()
   const [buildIndustry, setBuildIndustry] = useState(null)
   const [developIndustries, setDevelopIndustries] = useState([])
   const [sellTiles, setSellTiles] = useState([])
@@ -209,9 +212,21 @@ export function ActionPanel ({ gameState, playerId }) {
   return (
     <div className="space-y-2 border-t border-amber-900/20 bg-[#0f0c0a]/50 px-4 py-3">
       {actionError && (
-        <div className="rounded-lg border border-red-500/35 bg-gradient-to-r from-red-950/60 to-red-900/20 px-3 py-2 text-xs text-red-200 shadow-inner">
+        <m.div
+          key={actionErrorTick}
+          role="alert"
+          aria-live="polite"
+          initial={{ x: 0 }}
+          animate={
+            reduceMotion
+              ? {}
+              : { x: [0, -5, 5, -5, 5, 0] }
+          }
+          transition={{ duration: 0.42, ease: 'easeInOut' }}
+          className="rounded-lg border border-red-500/35 bg-gradient-to-r from-red-950/60 to-red-900/20 px-3 py-2 text-xs text-red-200 shadow-inner"
+        >
           {actionError}
-        </div>
+        </m.div>
       )}
 
       {!selectedAction ? (
@@ -422,16 +437,25 @@ export function ActionPanel ({ gameState, playerId }) {
             >
               Cancel
             </button>
-            <button
+            <m.button
+              type="button"
               onClick={handleConfirm}
-              className={`rounded-lg border px-4 py-2 text-xs font-bold transition active:scale-[0.99] ${
-                isReady
+              disabled={!isReady || actionSubmitting}
+              whileTap={isReady && !actionSubmitting && !reduceMotion ? { scale: 0.98 } : undefined}
+              className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-xs font-bold transition disabled:cursor-wait ${
+                isReady && !actionSubmitting
                   ? 'border-amber-400/50 bg-gradient-to-b from-amber-500 to-amber-900 text-amber-50 shadow-lg shadow-amber-950/40 hover:from-amber-400 hover:to-amber-800'
                   : 'cursor-not-allowed border-stone-700 bg-stone-800/80 text-stone-500'
               }`}
             >
-              Confirm
-            </button>
+              {actionSubmitting && (
+                <span
+                  className="inline-block h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-amber-200/30 border-t-amber-100"
+                  aria-hidden
+                />
+              )}
+              {actionSubmitting ? 'Sending…' : 'Confirm'}
+            </m.button>
             {!isReady && (
               <span className="text-xs text-stone-500 italic">
                 {getMissingSteps().join(' · ')}

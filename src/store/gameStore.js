@@ -9,8 +9,12 @@ export const useGameStore = create((set, get) => ({
   targetingMode: null,
   selectedTargets: [],
   actionError: null,
+  actionSubmitting: false,
+  actionErrorTick: 0,
 
   setGameState: (gameState) => set({ gameState }),
+
+  setActionSubmitting: (actionSubmitting) => set({ actionSubmitting }),
 
   setSelectedAction: (action) => set({
     selectedAction: action,
@@ -37,7 +41,10 @@ export const useGameStore = create((set, get) => ({
     selectedTargets: s.selectedTargets.filter(t => t.id !== targetId),
   })),
 
-  setActionError: (error) => set({ actionError: error }),
+  setActionError: (error) => set((s) => ({
+    actionError: error,
+    actionErrorTick: s.actionErrorTick + 1,
+  })),
 
   clearActionError: () => set({ actionError: null }),
 
@@ -47,6 +54,7 @@ export const useGameStore = create((set, get) => ({
     targetingMode: null,
     selectedTargets: [],
     actionError: null,
+    actionSubmitting: false,
   }),
 
   resetActionKeepCard: () => set((s) => ({
@@ -54,6 +62,7 @@ export const useGameStore = create((set, get) => ({
     targetingMode: null,
     selectedTargets: [],
     actionError: null,
+    actionSubmitting: false,
   })),
 
   getCurrentPlayer: () => {

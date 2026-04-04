@@ -7,12 +7,14 @@ import { useGameStore } from '@/store/gameStore'
 export function useGameActions () {
   const sendAction = useCallback((actionType, payload) => {
     const socket = getSocket()
-    const { setActionError, resetAction } = useGameStore.getState()
+    const { setActionError, resetAction, setActionSubmitting } = useGameStore.getState()
 
     console.log('[Client] Sending action:', actionType, payload)
 
+    setActionSubmitting(true)
     socket.emit('game:action', { actionType, payload }, (response) => {
       console.log('[Client] Action response:', response)
+      setActionSubmitting(false)
       if (response && response.success) {
         resetAction()
       } else {

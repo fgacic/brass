@@ -1,6 +1,7 @@
 'use client'
 
 import { useGameStore } from '@/store/gameStore'
+import { useGameStateFx } from '@/hooks/useGameStateFx'
 import { Board } from './Board'
 import { PlayerMat } from './PlayerMat'
 import { Hand } from './Hand'
@@ -9,6 +10,7 @@ import { TurnInfo } from './TurnInfo'
 import { GameLog } from './GameLog'
 import { MarketTrack } from './MarketTrack'
 import { GameOver } from './GameOver'
+import { GameMotionRoot } from './motionConfig'
 
 export function GameView ({ playerId }) {
   const { gameState } = useGameStore()
@@ -27,14 +29,21 @@ export function GameView ({ playerId }) {
 
   const myPlayer = gameState.players.find(p => p.id === playerId)
   const isMyTurn = gameState.turnOrder[gameState.currentPlayerIndex] === playerId
+  const boardFx = useGameStateFx(gameState, playerId)
 
   return (
+    <GameMotionRoot>
     <div className="flex h-screen flex-col overflow-hidden bg-gradient-to-b from-[#16120f] via-[#12100e] to-[#0a0c0b]">
-      <TurnInfo gameState={gameState} playerId={playerId} />
+      <TurnInfo
+        gameState={gameState}
+        playerId={playerId}
+        turnBarFlash={boardFx.myTurnFlash}
+        moneyPulseLoan={boardFx.moneyPulseLoan}
+      />
 
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1 overflow-hidden shadow-[inset_0_0_80px_rgba(0,0,0,0.35)]">
-          <Board gameState={gameState} playerId={playerId} />
+          <Board gameState={gameState} playerId={playerId} boardFx={boardFx} />
         </div>
 
         <div className="flex w-80 flex-col border-l border-amber-900/25 bg-gradient-to-b from-[#1f1813]/95 to-[#14100d]/98 shadow-[-12px_0_40px_rgba(0,0,0,0.35)] backdrop-blur-md">
@@ -43,14 +52,18 @@ export function GameView ({ playerId }) {
               coalMarket={gameState.coalMarket}
               ironMarket={gameState.ironMarket}
             />
-            <PlayerMat player={myPlayer} />
+            <PlayerMat
+              player={myPlayer}
+              matFlashIndustry={boardFx.matFlashIndustry}
+              moneyPulseLoan={boardFx.moneyPulseLoan}
+            />
             <GameLog log={gameState.log} players={gameState.players} />
           </div>
         </div>
       </div>
 
       <div className="border-t border-amber-900/30 bg-gradient-to-r from-[#1c1611] via-[#221a14] to-[#1c1611] shadow-[0_-12px_40px_rgba(0,0,0,0.4)] ring-1 ring-black/20">
-        <Hand cards={myPlayer?.hand || []} playerId={playerId} />
+        <Hand cards={myPlayer?.hand || []} handFlash={boardFx.handFlash} />
         {isMyTurn && (
           <ActionPanel
             gameState={gameState}
@@ -59,5 +72,6 @@ export function GameView ({ playerId }) {
         )}
       </div>
     </div>
+    </GameMotionRoot>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useGameStore } from '@/store/gameStore'
+import { m, AnimatePresence, useReducedMotion } from './motionConfig'
 
 const INDUSTRY_LABELS = {
   cottonMill: 'Cotton',
@@ -11,11 +12,11 @@ const INDUSTRY_LABELS = {
   pottery: 'Pottery',
 }
 
-export function Hand ({ cards, playerId }) {
+export function Hand ({ cards, handFlash }) {
   const { selectedCard, setSelectedCard, selectedAction, selectedTargets, gameState } = useGameStore()
   const needsCard = selectedAction && !selectedCard
+  const reduceMotion = useReducedMotion()
 
-  // When building, compute which cards are valid given what's already selected
   const validCardIds = computeValidCardIds(selectedAction, selectedTargets, gameState, cards)
 
   if (!cards || cards.length === 0) {
@@ -25,6 +26,11 @@ export function Hand ({ cards, playerId }) {
       </div>
     )
   }
+
+  const handFlashAnimate =
+    handFlash && !reduceMotion
+      ? { opacity: [1, 0.88, 1] }
+      : {}
 
   return (
     <div
@@ -39,46 +45,65 @@ export function Hand ({ cards, playerId }) {
             : 'Select a card to use for this action:'}
         </p>
       )}
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {cards.map(card => {
-          const isSelected = selectedCard === card.id
-          const isValid = !validCardIds || validCardIds.has(card.id)
-          const isDisabled = validCardIds !== null && !isValid
+      <m.div
+        className="flex gap-2 overflow-x-auto pb-1"
+        animate={handFlashAnimate}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+      >
+        <AnimatePresence mode="popLayout" initial={false}>
+          {cards.map(card => {
+            const isSelected = selectedCard === card.id
+            const isValid = !validCardIds || validCardIds.has(card.id)
+            const isDisabled = validCardIds !== null && !isValid
+            const buildSharedId =
+              selectedAction === 'build' && isSelected ? 'brass-build-pending' : undefined
 
-          return (
-            <button
-              key={card.id}
-              onClick={() => {
-                if (isDisabled) return
-                setSelectedCard(isSelected ? null : card.id)
-              }}
-              title={isDisabled ? 'Cannot use this card for the selected location' : undefined}
-              className={`flex-shrink-0 rounded-lg border px-3 py-2 text-xs font-semibold transition-all ${
-                isSelected
-                  ? '-translate-y-1 border-amber-300/70 bg-gradient-to-b from-amber-500 to-amber-900 text-white shadow-xl shadow-amber-950/50 ring-1 ring-amber-400/40'
-                  : isDisabled
-                    ? 'cursor-not-allowed border-stone-800 bg-stone-900/40 text-stone-600 opacity-45'
-                    : needsCard && isValid
-                      ? 'border-amber-600/45 bg-gradient-to-b from-stone-600 to-stone-800 text-[#f0ebe3] shadow-md hover:from-stone-500 hover:to-stone-700 hover:border-amber-500/55'
-                      : 'border-stone-600/50 bg-gradient-to-b from-stone-700 to-stone-900 text-stone-200 shadow-sm hover:from-stone-600 hover:to-stone-800'
-              }`}
-            >
-              {card.type === 'location' && (
-                <span>{card.locationName}</span>
-              )}
-              {card.type === 'industry' && (
-                <span>{INDUSTRY_LABELS[card.industry] || card.industry}</span>
-              )}
-              {card.type === 'wildLocation' && (
-                <span className="text-amber-300">Wild Loc</span>
-              )}
-              {card.type === 'wildIndustry' && (
-                <span className="text-amber-300">Wild Ind</span>
-              )}
-            </button>
-          )
-        })}
-      </div>
+            return (
+              <m.button
+                key={card.id}
+                type="button"
+                layout
+                layoutId={buildSharedId ?? `hand-card-${card.id}`}
+                initial={reduceMotion ? false : { opacity: 0, scale: 0.92 }}
+                animate={{
+                  opacity: 1,
+                  scale: 1,
+                  y: isSelected ? -4 : 0,
+                }}
+                exit={reduceMotion ? undefined : { opacity: 0, scale: 0.9 }}
+                transition={{ layout: { duration: 0.28 }, opacity: { duration: 0.22 }, scale: { duration: 0.22 } }}
+                onClick={() => {
+                  if (isDisabled) return
+                  setSelectedCard(isSelected ? null : card.id)
+                }}
+                title={isDisabled ? 'Cannot use this card for the selected location' : undefined}
+                className={`flex-shrink-0 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                  isSelected
+                    ? 'border-amber-300/70 bg-gradient-to-b from-amber-500 to-amber-900 text-white shadow-xl shadow-amber-950/50 ring-1 ring-amber-400/40'
+                    : isDisabled
+                      ? 'cursor-not-allowed border-stone-800 bg-stone-900/40 text-stone-600 opacity-45'
+                      : needsCard && isValid
+                        ? 'border-amber-600/45 bg-gradient-to-b from-stone-600 to-stone-800 text-[#f0ebe3] shadow-md hover:from-stone-500 hover:to-stone-700 hover:border-amber-500/55'
+                        : 'border-stone-600/50 bg-gradient-to-b from-stone-700 to-stone-900 text-stone-200 shadow-sm hover:from-stone-600 hover:to-stone-800'
+                }`}
+              >
+                {card.type === 'location' && (
+                  <span>{card.locationName}</span>
+                )}
+                {card.type === 'industry' && (
+                  <span>{INDUSTRY_LABELS[card.industry] || card.industry}</span>
+                )}
+                {card.type === 'wildLocation' && (
+                  <span className="text-amber-300">Wild Loc</span>
+                )}
+                {card.type === 'wildIndustry' && (
+                  <span className="text-amber-300">Wild Ind</span>
+                )}
+              </m.button>
+            )
+          })}
+        </AnimatePresence>
+      </m.div>
     </div>
   )
 }
@@ -88,7 +113,6 @@ function computeValidCardIds (selectedAction, selectedTargets, gameState, cards)
 
   const locTarget = selectedTargets.find(t => t.type === 'location')
 
-  // Location selected → filter cards to those valid for that location
   if (locTarget) {
     const boardLoc = gameState.board.locations[locTarget.id]
     if (!boardLoc) return null

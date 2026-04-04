@@ -8,10 +8,13 @@ Online multiplayer implementation of the board game Brass: Birmingham for 2-4 pl
 - **Socket.IO** - Real-time multiplayer communication
 - **Zustand** - Client-side state management
 - **Tailwind CSS** - Styling (warm brass / industrial palette; **DM Sans** body + **Lora** display via `next/font` in `layout.js`)
+- **Motion** (`motion` package) - Game UI transitions (hand list, board tiles/links, mat rows, turn bar, money pulse, action error shake). Wrapped in `LazyMotion` + `domMax` (layout + gestures + animations) via `src/components/game/motionConfig.js`; heavy sequences respect `useReducedMotion()`.
 
 ## Architecture
 
 Server-authoritative model: the server owns all game state, validates every action, and broadcasts filtered updates to each player. Clients render state and send action intents.
+
+**Client action UI:** `gameStore` exposes `actionSubmitting` (set around `game:action` emit/ack) and `actionErrorTick` (increments on each error) for the action panel spinner. After each new `game:log` entry, `useGameStateFx` diffs board/tiles and exposes short-lived FX keys (`tilePopId`, `linkDrawId`, `tileFlipIds`, `handFlash`, etc.); game components read those props and run **Motion** animations (`Hand`, `Board`, `PlayerMat`, `TurnInfo`, `ActionPanel`). Build uses optional shared `layoutId` `brass-build-pending` on the selected hand card and the new tile when `tilePopId` matches (best-effort overlap with server updates).
 
 ```
 src/
@@ -23,7 +26,7 @@ src/
   app/            # Next.js pages
   components/     # React components (lobby, game board, UI; `boardTheme.js` = player/industry colors for Board + TurnInfo)
   store/          # Zustand stores
-  hooks/          # React hooks (socket, game actions)
+  hooks/          # React hooks (socket, game actions, `useGameStateFx` for action UI highlights)
   lib/            # Socket.IO client singleton
 ```
 

@@ -1,5 +1,7 @@
 'use client'
 
+import { m, LayoutGroup, useReducedMotion } from './motionConfig'
+
 const progressTrack = [
   { position: 0, income: -10 }, { position: 1, income: -9 }, { position: 2, income: -8 },
   { position: 3, income: -7 }, { position: 4, income: -6 }, { position: 5, income: -5 },
@@ -50,7 +52,8 @@ const INDUSTRY_COLORS = {
   pottery: 'border-teal-500/45 bg-gradient-to-br from-teal-600/35 to-teal-950/50 shadow-sm',
 }
 
-export function PlayerMat ({ player }) {
+export function PlayerMat ({ player, matFlashIndustry, moneyPulseLoan }) {
+  const reduceMotion = useReducedMotion()
   if (!player) return null
 
   const income = getIncomeAtPosition(player.incomeMarkerPosition)
@@ -60,33 +63,56 @@ export function PlayerMat ({ player }) {
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-display text-sm font-semibold text-amber-100/80">Your mat</h3>
         <div className="flex flex-wrap justify-end gap-x-3 gap-y-1 text-xs font-semibold">
-          <span className="text-emerald-400">£{player.money}</span>
+          <m.span
+            className="inline-block text-emerald-400"
+            animate={
+              moneyPulseLoan && !reduceMotion
+                ? {
+                  scale: [1, 1.12, 1],
+                  color: ['rgb(52, 211, 153)', 'rgb(167, 243, 208)', 'rgb(52, 211, 153)'],
+                }
+                : { scale: 1 }
+            }
+            transition={{ duration: 0.75, ease: 'easeOut' }}
+          >
+            £{player.money}
+          </m.span>
           <span className="text-amber-400">{player.vpMarker} VP</span>
           <span className="text-sky-400">Inc: {income}</span>
           <span className="text-stone-400">{player.linkTilesRemaining} links</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        {Object.entries(player.playerMat || {}).map(([industry, tiles]) => (
-          <div
-            key={industry}
-            className={`rounded-lg border px-2 py-1.5 text-xs ${INDUSTRY_COLORS[industry] || 'border-stone-600 bg-stone-900/50'}`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-[#ebe4d9]">
-                {INDUSTRY_LABELS[industry] || industry}
-              </span>
-              <span className="tabular-nums text-amber-100/50">{tiles.length}</span>
-            </div>
-            {tiles.length > 0 && (
-              <div className="mt-0.5 text-amber-100/40">
-                Next: L{tiles[0].level} (£{tiles[0].cost})
+      <LayoutGroup>
+        <div className="grid grid-cols-2 gap-2">
+          {Object.entries(player.playerMat || {}).map(([industry, tiles]) => (
+            <m.div
+              key={industry}
+              layout
+              style={{ transformOrigin: 'left center' }}
+              className={`rounded-lg border px-2 py-1.5 text-xs ${INDUSTRY_COLORS[industry] || 'border-stone-600 bg-stone-900/50'}`}
+              animate={
+                matFlashIndustry === industry && !reduceMotion
+                  ? { scaleX: [1, 0.94, 1], opacity: [1, 0.75, 1] }
+                  : { scaleX: 1, opacity: 1 }
+              }
+              transition={{ duration: 0.55, ease: 'easeOut' }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-[#ebe4d9]">
+                  {INDUSTRY_LABELS[industry] || industry}
+                </span>
+                <span className="tabular-nums text-amber-100/50">{tiles.length}</span>
               </div>
-            )}
-          </div>
-        ))}
-      </div>
+              {tiles.length > 0 && (
+                <div className="mt-0.5 text-amber-100/40">
+                  Next: L{tiles[0].level} (£{tiles[0].cost})
+                </div>
+              )}
+            </m.div>
+          ))}
+        </div>
+      </LayoutGroup>
     </div>
   )
 }
