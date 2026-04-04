@@ -2,6 +2,7 @@
 
 import { useGameStore } from '@/store/gameStore'
 import { useGameStateFx } from '@/hooks/useGameStateFx'
+import { useMyTurnSound } from '@/hooks/useMyTurnSound'
 import { Board } from './Board'
 import { PlayerMat } from './PlayerMat'
 import { Hand } from './Hand'
@@ -14,6 +15,8 @@ import { GameMotionRoot } from './motionConfig'
 
 export function GameView ({ playerId }) {
   const { gameState } = useGameStore()
+  const boardFx = useGameStateFx(gameState, playerId)
+  useMyTurnSound(boardFx.myTurnFlash)
 
   if (!gameState) {
     return (
@@ -29,7 +32,6 @@ export function GameView ({ playerId }) {
 
   const myPlayer = gameState.players.find(p => p.id === playerId)
   const isMyTurn = gameState.turnOrder[gameState.currentPlayerIndex] === playerId
-  const boardFx = useGameStateFx(gameState, playerId)
 
   return (
     <GameMotionRoot>
