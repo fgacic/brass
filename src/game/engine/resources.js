@@ -1,6 +1,6 @@
 const { COAL_MARKET_EMPTY_PRICE, IRON_MARKET_EMPTY_PRICE } = require('../constants')
 const { findClosestCoalSource, areConnected } = require('./pathfinding')
-const { getCoalPrice, getIronPrice, removeFromMarket, addToMarket } = require('../data/markets')
+const { removeFromMarket, addToMarket } = require('../data/markets')
 
 function merchantIdsInPlay (state) {
   return Object.keys(state.board?.merchants || {})
@@ -33,10 +33,9 @@ function consumeCoal (state, locationId, amount) {
 
     if (isConnectedToMarket) {
       while (remaining > 0) {
-        const price = getCoalPrice(state.coalMarket)
-        if (price !== null) {
-          removeFromMarket(state.coalMarket)
-          totalCost += price
+        const boughtPrice = removeFromMarket(state.coalMarket)
+        if (boughtPrice !== null) {
+          totalCost += boughtPrice
         } else {
           totalCost += COAL_MARKET_EMPTY_PRICE
         }
@@ -68,10 +67,9 @@ function consumeIron (state, amount) {
   }
 
   while (remaining > 0) {
-    const price = getIronPrice(state.ironMarket)
-    if (price !== null) {
-      removeFromMarket(state.ironMarket)
-      totalCost += price
+    const boughtPrice = removeFromMarket(state.ironMarket)
+    if (boughtPrice !== null) {
+      totalCost += boughtPrice
     } else {
       totalCost += IRON_MARKET_EMPTY_PRICE
     }
@@ -177,10 +175,9 @@ function canAffordCoal (state, locationId, amount) {
   let cost = 0
   const tempMarket = JSON.parse(JSON.stringify(state.coalMarket))
   for (let i = 0; i < marketNeeded; i++) {
-    const price = getCoalPrice(tempMarket)
-    if (price !== null) {
-      removeFromMarket(tempMarket)
-      cost += price
+    const boughtPrice = removeFromMarket(tempMarket)
+    if (boughtPrice !== null) {
+      cost += boughtPrice
     } else {
       cost += COAL_MARKET_EMPTY_PRICE
     }
@@ -201,10 +198,9 @@ function canAffordIron (state, amount) {
   let cost = 0
   const tempMarket = JSON.parse(JSON.stringify(state.ironMarket))
   for (let i = 0; i < marketNeeded; i++) {
-    const price = getIronPrice(tempMarket)
-    if (price !== null) {
-      removeFromMarket(tempMarket)
-      cost += price
+    const boughtPrice = removeFromMarket(tempMarket)
+    if (boughtPrice !== null) {
+      cost += boughtPrice
     } else {
       cost += IRON_MARKET_EMPTY_PRICE
     }
@@ -257,11 +253,16 @@ function moveCubesToMarket (state, tile) {
       moneyEarned += price
     }
   } else if (tile.industry === 'coalMine') {
-    while (tile.resourcesRemaining > 0) {
-      const price = addToMarket(state.coalMarket)
-      if (price === null) break
-      tile.resourcesRemaining--
-      moneyEarned += price
+    const linkedToMerchant = merchantIdsInPlay(state).some((ml) =>
+      areConnected(state.board.links, state.era, tile.locationId, ml)
+    )
+    if (linkedToMerchant) {
+      while (tile.resourcesRemaining > 0) {
+        const price = addToMarket(state.coalMarket)
+        if (price === null) break
+        tile.resourcesRemaining--
+        moneyEarned += price
+      }
     }
   }
 

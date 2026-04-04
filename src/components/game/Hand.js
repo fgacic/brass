@@ -12,8 +12,47 @@ const INDUSTRY_LABELS = {
   pottery: 'Pottery',
 }
 
-export function Hand ({ cards, handFlash }) {
-  const { selectedCard, setSelectedCard, selectedAction, selectedTargets, gameState } = useGameStore()
+function nextMatTile (player, industry) {
+  if (!player || !industry) return null
+  const stack = player.playerMat?.[industry]
+  return stack?.[0] || null
+}
+
+function formatBuildCostLine (tile) {
+  if (!tile) return null
+  const parts = [`£${tile.cost}`]
+  if (tile.coalCost > 0) parts.push(`${tile.coalCost} coal`)
+  if (tile.ironCost > 0) parts.push(`${tile.ironCost} iron`)
+  if ((tile.beerCost || 0) > 0) parts.push(`${tile.beerCost} beer`)
+  return parts.join(' · ')
+}
+
+function handCardCostHint (card, player, selectedAction, buildIndustry) {
+  if (!player) return null
+  if (card.type === 'industry') {
+    const t = nextMatTile(player, card.industry)
+    return t ? formatBuildCostLine(t) : 'No tile on mat'
+  }
+  if (card.type === 'wildIndustry') {
+    return selectedAction === 'build' && buildIndustry
+      ? formatBuildCostLine(nextMatTile(player, buildIndustry)) || 'No tile on mat'
+      : 'Wild — pick industry'
+  }
+  if (card.type === 'location' || card.type === 'wildLocation') {
+    if (selectedAction === 'build' && buildIndustry) {
+      const t = nextMatTile(player, buildIndustry)
+      return t ? formatBuildCostLine(t) : 'No tile on mat'
+    }
+    if (selectedAction === 'build') {
+      return 'Build: set industry'
+    }
+    return null
+  }
+  return null
+}
+
+export function Hand ({ cards, player, handFlash }) {
+  const { selectedCard, setSelectedCard, selectedAction, selectedTargets, gameState, buildIndustry } = useGameStore()
   const needsCard = selectedAction && !selectedCard
   const reduceMotion = useReducedMotion()
 
@@ -57,6 +96,7 @@ export function Hand ({ cards, handFlash }) {
             const isDisabled = validCardIds !== null && !isValid
             const buildSharedId =
               selectedAction === 'build' && isSelected ? 'brass-build-pending' : undefined
+            const costHint = handCardCostHint(card, player, selectedAction, buildIndustry)
 
             return (
               <m.button
@@ -76,8 +116,8 @@ export function Hand ({ cards, handFlash }) {
                   if (isDisabled) return
                   setSelectedCard(isSelected ? null : card.id)
                 }}
-                title={isDisabled ? 'Cannot use this card for the selected location' : undefined}
-                className={`flex-shrink-0 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                title={isDisabled ? 'Cannot use this card for the selected location' : costHint || undefined}
+                className={`flex min-w-[4.5rem] max-w-[9rem] flex-shrink-0 flex-col items-stretch rounded-lg border px-2.5 py-2 text-left text-xs font-semibold transition-colors ${
                   isSelected
                     ? 'border-amber-300/70 bg-gradient-to-b from-amber-500 to-amber-900 text-white shadow-xl shadow-amber-950/50 ring-1 ring-amber-400/40'
                     : isDisabled
@@ -87,17 +127,28 @@ export function Hand ({ cards, handFlash }) {
                         : 'border-stone-600/50 bg-gradient-to-b from-stone-700 to-stone-900 text-stone-200 shadow-sm hover:from-stone-600 hover:to-stone-800'
                 }`}
               >
-                {card.type === 'location' && (
-                  <span>{card.locationName}</span>
-                )}
-                {card.type === 'industry' && (
-                  <span>{INDUSTRY_LABELS[card.industry] || card.industry}</span>
-                )}
-                {card.type === 'wildLocation' && (
-                  <span className="text-amber-300">Wild Loc</span>
-                )}
-                {card.type === 'wildIndustry' && (
-                  <span className="text-amber-300">Wild Ind</span>
+                <span className="leading-tight">
+                  {card.type === 'location' && (
+                    <span>{card.locationName}</span>
+                  )}
+                  {card.type === 'industry' && (
+                    <span>{INDUSTRY_LABELS[card.industry] || card.industry}</span>
+                  )}
+                  {card.type === 'wildLocation' && (
+                    <span className="text-amber-300">Wild Loc</span>
+                  )}
+                  {card.type === 'wildIndustry' && (
+                    <span className="text-amber-300">Wild Ind</span>
+                  )}
+                </span>
+                {costHint && (
+                  <span
+                    className={`mt-1 block text-[9px] font-medium leading-snug ${
+                      isSelected ? 'text-amber-50/85' : 'text-amber-100/45'
+                    }`}
+                  >
+                    {costHint}
+                  </span>
                 )}
               </m.button>
             )

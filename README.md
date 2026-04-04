@@ -41,6 +41,8 @@ Dependencies are managed with **Yarn** (`yarn.lock`). Open `http://localhost:300
 
 **Ngrok (optional):** run `npx ngrok config add-authtoken YOUR_TOKEN` once (token from [ngrok dashboard](https://dashboard.ngrok.com/get-started/your-authtoken)), or set `NGROK_AUTHTOKEN` in `.env.local` (gitignored). Then `yarn dev:ngrok` or `yarn start:ngrok`. Do not commit secrets.
 
+**Hand cards:** each card can show the **next tile on your mat** build cost (`Hand.js`): £, coal, iron, and beer from `playerMat[industry][0]`. Location / wild location cards show the same once **Build** is active and an industry is chosen in the action panel (`buildIndustry` in `gameStore`).
+
 ## How to Play
 
 1. Create or join a game room
@@ -55,7 +57,7 @@ Dependencies are managed with **Yarn** (`yarn.lock`). Open `http://localhost:300
 - **Build** - Place an industry tile on the board
 - **Network** - Place canal/rail links between locations
 - **Develop** - Remove tiles from your player mat to access higher levels
-- **Sell** - Flip cotton/manufacturer/pottery tiles at a merchant that demands that good, with a link to that merchant; all **six** non-empty demand strips from the fixed deck are always in play (see `merchants.js`). Coal can be sold to the coal market without a merchant link; iron uses the iron market the same way.
+- **Sell** - Flip cotton/manufacturer/pottery tiles at a merchant that demands that good, with a link to that merchant; all **six** non-empty demand strips from the fixed deck are always in play (see `merchants.js`). **Coal** from a newly built coal mine goes to the coal demand track only if your industry is **linked to any in-play merchant** and the track has empty slots; otherwise cubes **stay on the tile**. **Iron** from a new iron works sells into the iron market whenever there is space (no merchant link required).
 - **Loan** - Take £30, reduce income by 3 levels
 - **Scout** - Discard 3 cards, gain 1 wild location + 1 wild industry card
 - **Pass** - Skip the action (still discards a card)

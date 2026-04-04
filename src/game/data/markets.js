@@ -60,8 +60,9 @@ function getIronPrice (market) {
   return 6
 }
 
+/** Buy from demand: take the cheapest available cube (array is low price → high price). */
 function removeFromMarket (market) {
-  for (let i = market.length - 1; i >= 0; i--) {
+  for (let i = 0; i < market.length; i++) {
     if (market[i].filled) {
       market[i].filled = false
       return market[i].price

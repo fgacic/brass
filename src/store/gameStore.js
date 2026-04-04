@@ -8,6 +8,7 @@ export const useGameStore = create((set, get) => ({
   selectedCard: null,
   targetingMode: null,
   selectedTargets: [],
+  buildIndustry: null,
   actionError: null,
   actionSubmitting: false,
   actionErrorTick: 0,
@@ -16,9 +17,12 @@ export const useGameStore = create((set, get) => ({
 
   setActionSubmitting: (actionSubmitting) => set({ actionSubmitting }),
 
+  setBuildIndustry: (buildIndustry) => set({ buildIndustry }),
+
   setSelectedAction: (action) => set({
     selectedAction: action,
     selectedTargets: [],
+    buildIndustry: null,
     actionError: null,
   }),
 
@@ -53,6 +57,7 @@ export const useGameStore = create((set, get) => ({
     selectedCard: null,
     targetingMode: null,
     selectedTargets: [],
+    buildIndustry: null,
     actionError: null,
     actionSubmitting: false,
   }),
@@ -61,6 +66,7 @@ export const useGameStore = create((set, get) => ({
     selectedAction: null,
     targetingMode: null,
     selectedTargets: [],
+    buildIndustry: null,
     actionError: null,
     actionSubmitting: false,
   })),

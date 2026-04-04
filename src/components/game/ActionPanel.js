@@ -52,10 +52,10 @@ export function ActionPanel ({ gameState, playerId }) {
     setTargetingMode, selectedTargets, actionError,
     actionSubmitting, actionErrorTick,
     resetAction, setActionError, clearActionError,
+    buildIndustry, setBuildIndustry,
   } = useGameStore()
   const { build, network, develop, sell, loan, scout, pass } = useGameActions()
   const reduceMotion = useReducedMotion()
-  const [buildIndustry, setBuildIndustry] = useState(null)
   const [developIndustries, setDevelopIndustries] = useState([])
   const [sellTiles, setSellTiles] = useState([])
   const [showDebug, setShowDebug] = useState(false)

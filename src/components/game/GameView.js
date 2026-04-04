@@ -63,7 +63,7 @@ export function GameView ({ playerId }) {
       </div>
 
       <div className="border-t border-amber-900/30 bg-gradient-to-r from-[#1c1611] via-[#221a14] to-[#1c1611] shadow-[0_-12px_40px_rgba(0,0,0,0.4)] ring-1 ring-black/20">
-        <Hand cards={myPlayer?.hand || []} handFlash={boardFx.handFlash} />
+        <Hand cards={myPlayer?.hand || []} player={myPlayer} handFlash={boardFx.handFlash} />
         {isMyTurn && (
           <ActionPanel
             gameState={gameState}
