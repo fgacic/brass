@@ -6,7 +6,8 @@
     "dev": "node server.js",
     "dev:ngrok": "node server-ngrok.js",
     "build": "next build",
-    "start": "NODE_ENV=production node server.js"
+    "start": "NODE_ENV=production node server.js",
+    "start:ngrok": "yarn build && NODE_ENV=production node server-ngrok.js"
   },
   "dependencies": {
     "motion": "^12.38.0",

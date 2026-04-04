@@ -385,8 +385,33 @@ export function Board ({ gameState, playerId, boardFx = null }) {
   const drawnPairs = new Set()
   const tileFlipSet = new Set(boardFx?.tileFlipIds || [])
 
+  const [legendHeldHover, setLegendHeldHover] = useState(false)
+  const legendHoldTimerRef = useRef(null)
+
+  const clearLegendHoldTimer = useCallback(() => {
+    if (legendHoldTimerRef.current) {
+      clearTimeout(legendHoldTimerRef.current)
+      legendHoldTimerRef.current = null
+    }
+  }, [])
+
+  const onLegendPointerEnter = useCallback(() => {
+    clearLegendHoldTimer()
+    legendHoldTimerRef.current = setTimeout(() => {
+      setLegendHeldHover(true)
+      legendHoldTimerRef.current = null
+    }, 1000)
+  }, [clearLegendHoldTimer])
+
+  const onLegendPointerLeave = useCallback(() => {
+    clearLegendHoldTimer()
+    setLegendHeldHover(false)
+  }, [clearLegendHoldTimer])
+
+  useEffect(() => () => clearLegendHoldTimer(), [clearLegendHoldTimer])
+
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full overflow-visible">
       <svg
         ref={svgRef}
         viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
@@ -748,8 +773,23 @@ export function Board ({ gameState, playerId, boardFx = null }) {
         ))}
       </div>
 
-      {/* Industry letters + merchant beer / triple demand (narrow, w-fit) */}
-      <div className="pointer-events-none absolute top-2 right-2 flex max-h-[min(50vh,320px)] w-fit flex-col gap-1 overflow-y-auto rounded-lg border border-amber-900/30 bg-[#14100e]/92 px-2 py-1.5 shadow-lg shadow-black/40 backdrop-blur-sm ring-1 ring-white/5">
+      {/* Industry letters + merchant notes — hold pointer 1s here to enlarge (Motion) */}
+      <m.div
+        className="absolute top-2 right-2 z-20 flex max-h-[min(50vh,320px)] w-fit cursor-pointer flex-col gap-1 overflow-y-auto rounded-lg border border-amber-900/30 bg-[#14100e]/92 px-2 py-1.5 backdrop-blur-sm ring-1 ring-white/5"
+        style={{ transformOrigin: 'top right' }}
+        title="Hold pointer here for 1 second to enlarge the legend"
+        onPointerEnter={onLegendPointerEnter}
+        onPointerLeave={onLegendPointerLeave}
+        animate={{
+          scale: reduceMotion ? 1 : (legendHeldHover ? 1.5 : 1),
+          boxShadow: reduceMotion
+            ? '0 10px 15px -3px rgba(0,0,0,0.45), 0 4px 6px -4px rgba(0,0,0,0.35)'
+            : legendHeldHover
+              ? '0 25px 50px -12px rgba(0,0,0,0.55), 0 0 0 1px rgba(251,191,36,0.12)'
+              : '0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -4px rgba(0,0,0,0.35)',
+        }}
+        transition={{ type: 'spring', stiffness: 320, damping: 26, mass: 0.72 }}
+      >
         <span className="whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.1em] text-amber-200/45">
           Industries
         </span>
@@ -778,9 +818,9 @@ export function Board ({ gameState, playerId, boardFx = null }) {
           </div>
         </div>
         <p className="w-fit max-w-[9.5rem] border-t border-amber-900/25 pt-1 text-[8px] leading-snug text-amber-100/38">
-          Triple C/M/P disc: one demand, three goods, one beer. Hover for tooltip.
+          Triple C/M/P disc: one demand, three goods, one beer. Map tooltips on hover.
         </p>
-      </div>
+      </m.div>
 
       {/* Zoom controls */}
       <div className="absolute bottom-2 right-2 flex flex-col gap-1.5">
