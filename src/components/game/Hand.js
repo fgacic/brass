@@ -175,7 +175,7 @@ function computeValidCardIds (selectedAction, selectedTargets, gameState, cards)
   return null
 }
 
-export function Hand ({ cards, player, handFlash }) {
+export function Hand ({ cards, player, handFlash, embedded = false }) {
   const {
     selectedCard, setSelectedCard, selectedAction, selectedTargets, gameState,
     buildIndustry, developIndustries, sellTiles,
@@ -199,7 +199,7 @@ export function Hand ({ cards, player, handFlash }) {
 
   if (!cards || cards.length === 0) {
     return (
-      <div className="px-4 py-3 text-sm text-amber-100/35">
+      <div className={`text-amber-100/35 ${embedded ? 'px-3 py-2 text-xs' : 'px-4 py-3 text-sm'}`}>
         No cards in hand
       </div>
     )
@@ -212,24 +212,24 @@ export function Hand ({ cards, player, handFlash }) {
 
   return (
     <div
-      className={`px-4 py-3 transition-colors ${
-        needsCard ? 'bg-gradient-to-r from-amber-950/40 via-transparent to-amber-950/20' : ''
-      }`}
+      className={`transition-colors ${
+        embedded ? 'flex h-full min-h-0 flex-col justify-center px-3 py-2' : 'px-4 py-3'
+      } ${needsCard ? 'bg-gradient-to-r from-amber-950/40 via-transparent to-amber-950/20' : ''}`}
     >
       {needsCard && (
-        <p className="mb-2 text-xs font-medium text-amber-300/90 animate-pulse">
+        <p className={`font-medium text-amber-300/90 animate-pulse ${embedded ? 'mb-1 text-[10px] leading-tight' : 'mb-2 text-xs'}`}>
           {validCardIds
             ? `Select a valid card (${validCardIds.size} available):`
             : 'Select a card to use for this action:'}
         </p>
       )}
       {selectedAction === 'scout' && selectedCard && (
-        <p className="mb-2 text-[10px] font-medium text-rose-200/75">
+        <p className={`font-medium text-rose-200/75 ${embedded ? 'mb-1 text-[9px] leading-tight' : 'mb-2 text-[10px]'}`}>
           Scout discards this card plus the two marked “with scout” (first two other cards in hand order).
         </p>
       )}
       <m.div
-        className="flex gap-2 overflow-x-auto pb-1"
+        className={`flex gap-2 overflow-x-auto ${embedded ? 'min-h-[4.25rem] items-center py-0.5 [scrollbar-width:thin]' : 'pb-1'}`}
         animate={handFlashAnimate}
         transition={{ duration: 0.4, ease: 'easeOut' }}
       >

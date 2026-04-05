@@ -7,14 +7,16 @@ import { m, useReducedMotion } from './motionConfig'
 import { pickMerchantLocationForSell } from '@/game/engine/merchantSell'
 
 const ACTIONS = [
-  { type: 'build', label: 'Build', desc: 'Place an industry tile' },
-  { type: 'network', label: 'Network', desc: 'Place a canal/rail link' },
+  { type: 'build', label: 'Build', desc: 'Place an industry tile', primary: true },
+  { type: 'network', label: 'Network', desc: 'Place a canal/rail link', primary: true },
   { type: 'develop', label: 'Develop', desc: 'Remove tiles from mat' },
   { type: 'sell', label: 'Sell', desc: 'Flip industry tiles' },
-  { type: 'loan', label: 'Loan', desc: 'Take £30, lose 3 income levels' },
+  { type: 'loan', label: 'Loan', desc: 'Take £30, lose 3 income levels', primary: true },
   { type: 'scout', label: 'Scout', desc: 'Discard 3 cards, get wilds' },
   { type: 'pass', label: 'Pass', desc: 'Skip this action' },
 ]
+
+const PRIMARY_CHOOSER_ORDER = ['build', 'network', 'loan']
 
 const INDUSTRY_LABELS = {
   cottonMill: 'Cotton',
@@ -36,7 +38,7 @@ function formatLocName (id) {
   return names[id] || id.charAt(0).toUpperCase() + id.slice(1)
 }
 
-export function ActionPanel ({ gameState, playerId }) {
+export function ActionPanel ({ gameState, playerId, embedded = false }) {
   const {
     selectedAction, setSelectedAction, selectedCard,
     setTargetingMode, selectedTargets, actionError,
@@ -193,8 +195,33 @@ export function ActionPanel ({ gameState, playerId }) {
 
   const isReady = getMissingSteps().length === 0
 
+  const primaryChooserActions = PRIMARY_CHOOSER_ORDER.map((t) =>
+    ACTIONS.find((a) => a.type === t)
+  ).filter(Boolean)
+  const secondaryChooserActions = ACTIONS.filter(
+    (a) => !PRIMARY_CHOOSER_ORDER.includes(a.type)
+  )
+
+  const chooserButtonClass = (isPrimary) => {
+    const sizeClass = embedded
+      ? isPrimary
+        ? 'min-h-[2.125rem] min-w-0 flex-1 px-2 py-1.5 text-xs shadow-lg sm:px-3'
+        : 'px-2 py-1 text-[10px]'
+      : isPrimary
+        ? 'min-h-[2.75rem] min-w-0 flex-1 px-3 py-2.5 text-sm shadow-lg sm:px-4'
+        : 'px-3 py-2 text-xs'
+    const borderClass = isPrimary
+      ? 'border-amber-600/45 ring-1 ring-amber-500/15'
+      : 'border-stone-600/35'
+    return `rounded-lg border bg-gradient-to-b from-stone-600 to-stone-800 font-semibold text-stone-100 shadow-md shadow-black/25 transition hover:from-stone-500 hover:to-stone-700 hover:shadow-lg active:scale-[0.98] ${borderClass} ${sizeClass}`
+  }
+
+  const rootClass = embedded
+    ? 'flex h-full min-h-0 w-[min(42vw,20rem)] max-w-[22rem] shrink-0 flex-col gap-1.5 overflow-y-auto overflow-x-hidden bg-[#0f0c0a]/55 px-3 py-2 [scrollbar-width:thin]'
+    : 'space-y-2 border-t border-amber-900/20 bg-[#0f0c0a]/50 px-4 py-3'
+
   return (
-    <div className="space-y-2 border-t border-amber-900/20 bg-[#0f0c0a]/50 px-4 py-3">
+    <div className={rootClass}>
       {actionError && (
         <m.div
           key={actionErrorTick}
@@ -214,33 +241,53 @@ export function ActionPanel ({ gameState, playerId }) {
       )}
 
       {!selectedAction ? (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-amber-100/55">Choose an action</p>
+        <div className={embedded ? 'space-y-1.5' : 'space-y-2'}>
+          <div className="flex items-center justify-between gap-1">
+            <p className={`font-medium text-amber-100/55 ${embedded ? 'text-[10px]' : 'text-xs'}`}>Choose an action</p>
             <button
               onClick={() => setShowDebug(!showDebug)}
-              className="rounded-md border border-stone-600/40 bg-stone-900/80 px-2 py-0.5 text-[10px] text-stone-400 transition hover:border-amber-800/50 hover:text-amber-100/80"
+              className="rounded-md border border-stone-600/40 bg-stone-900/80 px-1.5 py-px text-[9px] text-stone-400 transition hover:border-amber-800/50 hover:text-amber-100/80 sm:px-2 sm:py-0.5 sm:text-[10px]"
             >
               {showDebug ? 'Hide Debug' : 'Debug'}
             </button>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {ACTIONS.map(a => (
-              <button
-                key={a.type}
-                onClick={() => handleActionSelect(a.type)}
-                className="rounded-lg border border-stone-600/35 bg-gradient-to-b from-stone-600 to-stone-800 px-3 py-2 text-xs font-semibold text-stone-100 shadow-md shadow-black/25 transition hover:from-stone-500 hover:to-stone-700 hover:shadow-lg active:scale-[0.98]"
-                title={a.desc}
-              >
-                {a.label}
-              </button>
-            ))}
+          <div className={embedded ? 'space-y-1' : 'space-y-2'}>
+            <div
+              className={`flex w-full flex-nowrap ${embedded ? 'gap-1' : 'gap-2'}`}
+            >
+              {primaryChooserActions.map((a) => (
+                <button
+                  key={a.type}
+                  type="button"
+                  onClick={() => handleActionSelect(a.type)}
+                  className={chooserButtonClass(true)}
+                  title={a.desc}
+                >
+                  {a.label}
+                </button>
+              ))}
+            </div>
+            <div
+              className={`flex flex-wrap ${embedded ? 'gap-1' : 'gap-2'}`}
+            >
+              {secondaryChooserActions.map((a) => (
+                <button
+                  key={a.type}
+                  type="button"
+                  onClick={() => handleActionSelect(a.type)}
+                  className={chooserButtonClass(false)}
+                  title={a.desc}
+                >
+                  {a.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       ) : (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm text-amber-400 font-medium capitalize">
+        <div className={embedded ? 'space-y-1.5' : 'space-y-2'}>
+          <div className={`flex flex-wrap items-center ${embedded ? 'gap-1.5' : 'gap-2'}`}>
+            <span className={`font-medium capitalize text-amber-400 ${embedded ? 'text-xs' : 'text-sm'}`}>
               {selectedAction}
             </span>
 

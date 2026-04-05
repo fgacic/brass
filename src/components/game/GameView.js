@@ -68,12 +68,24 @@ export function GameView ({ playerId }) {
       </div>
 
       <div className="border-t border-amber-900/30 bg-gradient-to-r from-[#1c1611] via-[#221a14] to-[#1c1611] shadow-[0_-12px_40px_rgba(0,0,0,0.4)] ring-1 ring-black/20">
-        <Hand cards={myPlayer?.hand || []} player={myPlayer} handFlash={boardFx.handFlash} />
-        {isMyTurn && (
-          <ActionPanel
-            gameState={gameState}
-            playerId={playerId}
-          />
+        {isMyTurn ? (
+          <div className="flex min-h-[6.25rem] max-h-[min(42vh,320px)] items-stretch">
+            <ActionPanel
+              embedded
+              gameState={gameState}
+              playerId={playerId}
+            />
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center border-l border-amber-900/25 bg-[#0a0806]/40">
+              <Hand
+                embedded
+                cards={myPlayer?.hand || []}
+                player={myPlayer}
+                handFlash={boardFx.handFlash}
+              />
+            </div>
+          </div>
+        ) : (
+          <Hand cards={myPlayer?.hand || []} player={myPlayer} handFlash={boardFx.handFlash} />
         )}
       </div>
       <RoundAdvanceOverlay round={overlayRound} />
