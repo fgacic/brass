@@ -14,6 +14,7 @@ import { m, useReducedMotion } from './motionConfig'
 import { computeSlotGridGeometry } from './boardSlotGrid'
 import { industryDefinitions } from '@/game/data/industries'
 
+
 // Static connection metadata (canal/rail flags) — must mirror board-connections.js
 const CONNECTION_META = {
   'warrington-stokeOnTrent':       { canal: true,  rail: true  },
