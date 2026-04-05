@@ -71,7 +71,7 @@ Dependencies are managed with **Yarn** (`yarn.lock`). Open `http://localhost:300
 
 All game data (locations, connections, industry tiles, cards, markets, merchants) is defined in `src/game/data/`. The game engine in `src/game/engine/` operates purely on this data with no side effects.
 
-`board-location-positions.js` holds SVG `x`/`y` coordinates for each location on the client board map; ids must match `locations.js`. On the board, a merchant strip that accepts all three sellable industries is drawn as a three-sector C/M/P pie with an SVG `title` tooltip (`Board.js`).
+`board-location-positions.js` holds SVG `x`/`y` coordinates for each location on the client board map; ids must match `locations.js`. Merchant demand is drawn as orbit icons: single-industry discs or a triple C/M/P pie; **one gold beer dot sits under each strip’s icon** (filled while that strip still has merchant beer, hollow after use), matching one beer per strip (`Board.js` `renderMerchantDemandBadges`).
 
 The second farm brewery (`farmBrewery2`) is not separate buildable links to Kidderminster/Worcester: it is on the `kidderminster-worcester` trunk (`TRUNK_ATTACHED_FARM` in `board-connections.js`). Pathfinding and player network treat the farm as reachable only when that trunk link exists; the map draws a T-stem from the trunk midpoint to the farm node.
 

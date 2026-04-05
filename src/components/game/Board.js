@@ -105,11 +105,15 @@ function labelAtPolar (cx, cy, dist, deg) {
 
 /**
  * Foreign-market demand badges: single-industry circles or one triple-demand pie (C/M/P).
- * Uses native SVG title elements for hover tooltips.
+ * One merchant beer per demand strip, drawn under that strip’s icon. Uses SVG title for tooltips.
  */
 function renderMerchantDemandBadges (pos, baseR, slots, keyPrefix) {
   if (!slots.length) return null
   const pieR = 10
+  const singleR = 9
+  const beerR = 3.2
+  const gapBelowBadge = 4
+
   return (
     <g>
       {slots.map((slot, idx) => {
@@ -121,6 +125,8 @@ function renderMerchantDemandBadges (pos, baseR, slots, keyPrefix) {
         const orbitR = baseR + 20
         const cx = pos.x + Math.cos(angleRad) * orbitR
         const cy = pos.y + Math.sin(angleRad) * orbitR
+        const beerRemaining = slot.beerRemaining ?? 0
+        const hasBeer = beerRemaining > 0
 
         if (slot.demandKind === 'tripleForeign') {
           const c = INDUSTRY_COLORS.cottonMill || '#3b82f6'
@@ -129,10 +135,11 @@ function renderMerchantDemandBadges (pos, baseR, slots, keyPrefix) {
           const w = labelAtPolar(cx, cy, 5.2, -30)
           const wM = labelAtPolar(cx, cy, 5.2, 90)
           const wP = labelAtPolar(cx, cy, 5.2, 210)
+          const beerY = cy + pieR + gapBelowBadge + beerR
           return (
             <g key={`${keyPrefix}-${idx}`} pointerEvents="all" cursor="help">
               <title>
-                Foreign market: accepts cotton, manufacturer, and pottery. One merchant beer for this space.
+                {`Foreign market: cotton, manufacturer, pottery. Beer for this strip: ${hasBeer ? 'available' : 'sold'}.`}
               </title>
               <circle cx={cx} cy={cy} r={pieR + 3} fill="transparent" />
               <path d={pieSectorPath(cx, cy, pieR, -90, 120)} fill={c} stroke="#1c1917" strokeWidth={1.2} />
@@ -148,6 +155,16 @@ function renderMerchantDemandBadges (pos, baseR, slots, keyPrefix) {
               <text x={wP.x} y={wP.y + 0.5} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="6" fontWeight="bold" pointerEvents="none">
                 {INDUSTRY_LETTERS.pottery}
               </text>
+              <circle
+                cx={cx}
+                cy={beerY}
+                r={beerR}
+                fill={hasBeer ? '#ca8a04' : 'none'}
+                stroke="#fbbf24"
+                strokeWidth={0.85}
+                opacity={hasBeer ? 1 : 0.4}
+                pointerEvents="none"
+              />
             </g>
           )
         }
@@ -155,14 +172,25 @@ function renderMerchantDemandBadges (pos, baseR, slots, keyPrefix) {
         const ind = slot.allowedIndustries?.[0]
         if (!ind) return null
         const label = INDUSTRY_LABEL[ind] || ind
+        const beerY = cy + singleR + gapBelowBadge + beerR
         return (
           <g key={`${keyPrefix}-${idx}`} pointerEvents="all" cursor="help">
-            <title>{`Foreign market: ${label}`}</title>
+            <title>{`Foreign market: ${label}. Beer for this strip: ${hasBeer ? 'available' : 'sold'}.`}</title>
             <circle cx={cx} cy={cy} r={12} fill="transparent" />
-            <circle cx={cx} cy={cy} r={9} fill={INDUSTRY_COLORS[ind] || '#555'} stroke="#1c1917" strokeWidth={1.5} />
+            <circle cx={cx} cy={cy} r={singleR} fill={INDUSTRY_COLORS[ind] || '#555'} stroke="#1c1917" strokeWidth={1.5} />
             <text x={cx} y={cy + 0.5} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="8" fontWeight="bold" pointerEvents="none">
               {INDUSTRY_LETTERS[ind] || '?'}
             </text>
+            <circle
+              cx={cx}
+              cy={beerY}
+              r={beerR}
+              fill={hasBeer ? '#ca8a04' : 'none'}
+              stroke="#fbbf24"
+              strokeWidth={0.85}
+              opacity={hasBeer ? 1 : 0.4}
+              pointerEvents="none"
+            />
           </g>
         )
       })}
@@ -672,16 +700,14 @@ export function Board ({ gameState, playerId, boardFx = null }) {
           const merchantDemandSlots = merchantData
             ? (merchantData.demandSlots || []).map((slot) => {
               const acc = slot.acceptedIndustries || []
+              const beerRemaining = slot.merchantBeerRemaining ?? 0
               if (isTripleMerchantDemand(acc)) {
-                return { demandKind: 'tripleForeign', allowedIndustries: acc, tileId: null }
+                return { demandKind: 'tripleForeign', allowedIndustries: acc, beerRemaining }
               }
               if (acc.length === 0) return null
-              return { demandKind: 'single', allowedIndustries: [acc[0]], tileId: null }
+              return { demandKind: 'single', allowedIndustries: [acc[0]], beerRemaining }
             }).filter(Boolean)
             : []
-          const merchantBeerTotal = merchantData?.demandSlots?.length
-            ? merchantData.demandSlots.reduce((a, s) => a + (s.merchantBeerRemaining || 0), 0)
-            : (merchantData?.merchantBeerRemaining || 0)
 
           const useSlotGrid = !isMerchant && slots.length > 0
           const slotGridGeo = useSlotGrid ? computeSlotGridGeometry(pos, slots.length) : null
@@ -894,19 +920,6 @@ export function Board ({ gameState, playerId, boardFx = null }) {
                   />
                   {isMerchant && merchantDemandSlots.length > 0 &&
                     renderMerchantDemandBadges(pos, baseR, merchantDemandSlots, `merch-${locId}`)}
-                  {isMerchant && merchantData && merchantBeerTotal > 0 &&
-                    [...Array(merchantBeerTotal)].map((_, i) => (
-                      <circle
-                        key={`merch-beer-${i}`}
-                        cx={pos.x + 10 + i * 9}
-                        cy={pos.y - 10}
-                        r={3.5}
-                        fill="#ca8a04"
-                        stroke="#fbbf24"
-                        strokeWidth={0.8}
-                        pointerEvents="none"
-                      />
-                    ))}
                   {tilesHere.map((tile, idx) => {
                     const angle = (idx * 2 * Math.PI) / Math.max(tilesHere.length, 1) - Math.PI / 2
                     const radius = tilesHere.length > 1 ? 10 : 0
@@ -1046,12 +1059,12 @@ export function Board ({ gameState, playerId, boardFx = null }) {
               aria-hidden
             />
             <span className="text-[8px] font-medium leading-snug text-amber-100/48">
-              Gold dots at merchants: beer barrels (sell using market). Refill at rail era.
+              Gold dot under each merchant demand icon: beer for that strip (hollow when used). Refill at rail era.
             </span>
           </div>
         </div>
         <p className="w-fit max-w-[9.5rem] border-t border-amber-900/25 pt-1 text-[8px] leading-snug text-amber-100/38">
-          Triple C/M/P disc: one demand, three goods, one beer. Map tooltips on hover.
+          Triple C/M/P disc: one demand strip, one beer below it. Map tooltips on hover.
         </p>
       </m.div>
 
