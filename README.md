@@ -5,7 +5,6 @@ Online multiplayer implementation of the board game Brass: Birmingham for 2-4 pl
 ## Tech Stack
 
 - **Next.js 15** - App Router, React 19
-- **@vercel/analytics** - Web analytics (`<Analytics />` in `src/app/layout.js`; active when deployed on Vercel)
 - **Socket.IO** - Real-time multiplayer communication
 - **Zustand** - Client-side state management
 - **Tailwind CSS** - Styling (warm brass / industrial palette; **DM Sans** body + **Lora** display via `next/font` in `layout.js`)
@@ -18,7 +17,7 @@ Server-authoritative model: the server owns all game state, validates every acti
 
 **Client action UI:** `gameStore` exposes `actionSubmitting` (set around `game:action` emit/ack) and `actionErrorTick` (increments on each error) for the action panel spinner. After each new `game:log` entry, `useGameStateFx` diffs board/tiles and exposes short-lived FX keys (`tilePopId`, `linkDrawId`, `tileFlipIds`, `handFlash`, etc.); game components read those props and run **Motion** animations (`Hand`, `Board`, `PlayerMat`, `TurnInfo`, `ActionPanel`). Build uses optional shared `layoutId` `brass-build-pending` on the selected hand card and the new tile when `tilePopId` matches (best-effort overlap with server updates).
 
-**Board map:** Buildable locations (cities, towns, farm breweries) use a **slot grid** in `Board.js` with layout from `boardSlotGrid.js`: square cells show industry icons when empty; when built, the cell fills with industry color, owner outline, and tile level (plus resource count when relevant). The location name sits under the grid. Merchant cities keep the circular node and foreign-market demand badges. A **bottom-left build-cost legend** lists each industry’s tile levels with £ and coal/iron/beer (from `industryDefinitions` in `industries.js`); pointer **hover** scales the panel (bottom-left origin); reduced motion disables the scale. **Dual-industry** empty slots (split cell) get an animated **cyan outline on the matching half** when a build industry is chosen, so pairing matches the hand/action-panel sky highlights; single-industry empty slots get a full-cell cyan ring in the same case (`renderSlotGridEmptyCell`, `buildPairingIndustry`).
+**Board map:** Buildable locations (cities, towns, farm breweries) use a **slot grid** in `Board.js` with layout from `boardSlotGrid.js`. Wheel / trackpad zoom uses `deltaY`-scaled steps (`WHEEL_ZOOM_*` in `Board.js`) so macOS trackpads do not compound a fixed 12% on every tick; square cells show industry icons when empty; when built, the cell fills with industry color, owner outline, and tile level (plus resource count when relevant). The location name sits under the grid. Merchant cities keep the circular node and foreign-market demand badges. A **bottom-left build-cost legend** lists each industry’s tile levels with £ and coal/iron/beer (from `industryDefinitions` in `industries.js`); pointer **hover** scales the panel (bottom-left origin); reduced motion disables the scale. **Dual-industry** empty slots (split cell) get an animated **cyan outline on the matching half** when a build industry is chosen, so pairing matches the hand/action-panel sky highlights; single-industry empty slots get a full-cell cyan ring in the same case (`renderSlotGridEmptyCell`, `buildPairingIndustry`).
 
 ```
 src/

@@ -11,7 +11,6 @@
     "start:ngrok": "yarn build && NODE_ENV=production node server-ngrok.js"
   },
   "dependencies": {
-    "@vercel/analytics": "^2.0.1",
     "howler": "^2.2.4",
     "motion": "^12.38.0",
     "nanoid": "^5.0.0",
