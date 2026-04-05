@@ -217,6 +217,7 @@ function countAvailableBeer (state, playerId, locationId, merchantLocationId) {
 }
 
 function moveCubesToMarket (state, tile) {
+  
   let moneyEarned = 0
 
   if (tile.industry === 'ironWorks') {
