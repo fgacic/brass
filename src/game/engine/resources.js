@@ -190,6 +190,7 @@ function canAffordIron (state, amount) {
   const ironTiles = state.industryTilesOnBoard.filter(
     t => t.industry === 'ironWorks' && !t.isFlipped && t.resourcesRemaining > 0
   )
+  
   let freeIron = 0
   for (const t of ironTiles) freeIron += t.resourcesRemaining
   if (freeIron >= amount) return { possible: true, cost: 0 }
