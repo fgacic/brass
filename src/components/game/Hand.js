@@ -18,30 +18,33 @@ function nextMatTile (player, industry) {
   return stack?.[0] || null
 }
 
-function formatBuildCostLine (tile) {
+function formatMatTileCostLine (tile, { includeBeer }) {
   if (!tile) return null
   const parts = [`£${tile.cost}`]
   if (tile.coalCost > 0) parts.push(`${tile.coalCost} coal`)
   if (tile.ironCost > 0) parts.push(`${tile.ironCost} iron`)
-  if ((tile.beerCost || 0) > 0) parts.push(`${tile.beerCost} beer`)
+  if (includeBeer && (tile.beerCost || 0) > 0) {
+    parts.push(`${tile.beerCost} beer`)
+  }
   return parts.join(' · ')
 }
 
 function handCardCostHint (card, player, selectedAction, buildIndustry) {
   if (!player) return null
+  const includeBeer = selectedAction === 'sell'
   if (card.type === 'industry') {
     const t = nextMatTile(player, card.industry)
-    return t ? formatBuildCostLine(t) : 'No tile on mat'
+    return t ? formatMatTileCostLine(t, { includeBeer }) : 'No tile on mat'
   }
   if (card.type === 'wildIndustry') {
     return selectedAction === 'build' && buildIndustry
-      ? formatBuildCostLine(nextMatTile(player, buildIndustry)) || 'No tile on mat'
+      ? formatMatTileCostLine(nextMatTile(player, buildIndustry), { includeBeer: false }) || 'No tile on mat'
       : 'Wild — pick industry'
   }
   if (card.type === 'location' || card.type === 'wildLocation') {
     if (selectedAction === 'build' && buildIndustry) {
       const t = nextMatTile(player, buildIndustry)
-      return t ? formatBuildCostLine(t) : 'No tile on mat'
+      return t ? formatMatTileCostLine(t, { includeBeer: false }) : 'No tile on mat'
     }
     if (selectedAction === 'build') {
       return 'Build: set industry'
