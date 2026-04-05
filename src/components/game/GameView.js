@@ -7,6 +7,7 @@ import { useRoundAdvanceOverlay } from '@/hooks/useRoundAdvanceOverlay'
 import { RoundAdvanceOverlay } from './RoundAdvanceOverlay'
 import { Board } from './Board'
 import { PlayerMat } from './PlayerMat'
+import { BoardResourceSummary } from './BoardResourceSummary'
 import { Hand } from './Hand'
 import { ActionPanel } from './ActionPanel'
 import { TurnInfo } from './TurnInfo'
@@ -62,6 +63,7 @@ export function GameView ({ playerId }) {
               matFlashIndustry={boardFx.matFlashIndustry}
               moneyPulseLoan={boardFx.moneyPulseLoan}
             />
+            <BoardResourceSummary gameState={gameState} />
             <GameLog log={gameState.log} players={gameState.players} />
           </div>
         </div>

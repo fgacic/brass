@@ -15,6 +15,8 @@ Online multiplayer implementation of the board game Brass: Birmingham for 2-4 pl
 
 Server-authoritative model: the server owns all game state, validates every action, and broadcasts filtered updates to each player. Clients render state and send action intents.
 
+**Sidebar supply:** Under the player mat, **`BoardResourceSummary`** (`BoardResourceSummary.js`) shows **iron** as one number: cubes on unflipped **iron works** on the board only (`board-resource-summary.js`; iron demand track remains in **Markets** / `MarketTrack.js`). **Coal** lists each **location** that has coal on a mine with remaining cubes, per-location counts, and **total** coal on mines only.
+
 **Client action UI:** On your turn, `GameView` lays out **`ActionPanel`** (left, fixed max width, scrolls if tall) and **`Hand`** (right, flexes, horizontal card scroll) in one bar with shared height (`embedded` props). **Build**, **Network**, and **Loan** share one full-width row (larger chips); **Develop**, **Sell**, **Scout**, and **Pass** wrap on the row below (`ActionPanel.js`, `PRIMARY_CHOOSER_ORDER` + `primary` on `ACTIONS`). Other players see only the hand strip. `gameStore` exposes `actionSubmitting` (set around `game:action` emit/ack) and `actionErrorTick` (increments on each error) for the action panel spinner. After each new `game:log` entry, `useGameStateFx` diffs board/tiles and exposes short-lived FX keys (`tilePopId`, `linkDrawId`, `tileFlipIds`, `handFlash`, etc.); game components read those props and run **Motion** animations (`Hand`, `Board`, `PlayerMat`, `TurnInfo`, `ActionPanel`). Build uses optional shared `layoutId` `brass-build-pending` on the selected hand card and the new tile when `tilePopId` matches (best-effort overlap with server updates).
 
 **Board map:** Buildable locations (cities, towns, farm breweries) use a **slot grid** in `Board.js` with layout from `boardSlotGrid.js`. Wheel / trackpad zoom uses `deltaY`-scaled steps (`WHEEL_ZOOM_*` in `Board.js`) so macOS trackpads do not compound a fixed 12% on every tick; square cells show industry icons when empty; when built, the cell fills with industry color, owner outline, and tile level (plus resource count when relevant). The location name sits under the grid. Merchant cities keep the circular node and foreign-market demand badges. **Map legends** (link styles top-left, industries top-right, build costs bottom-left in `Board.js`) share the same interaction: **hold the pointer ~1s** to enlarge (scale 1.5, spring + shadow); each uses its corner as `transformOrigin`. Reduced motion keeps scale at 1. Build costs list tile levels with £ and coal/iron/beer from `industryDefinitions` in `industries.js`. **Dual-industry** empty slots (split cell) get an animated **cyan outline on the matching half** when a build industry is chosen, so pairing matches the hand/action-panel sky highlights; single-industry empty slots get a full-cell cyan ring in the same case (`renderSlotGridEmptyCell`, `buildPairingIndustry`).
@@ -24,7 +26,8 @@ src/
   game/           # Pure game logic (runs on server)
     data/         # Static game data (locations, industries, cards, markets, merchants)
     engine/       # Game engine (state, actions, resources, scoring, pathfinding)
-    constants.js  # Enums and configuration
+    constants.js           # Enums and configuration
+    board-resource-summary.js  # Read-only aggregates for sidebar iron/coal counts
   server/         # Server layer (rooms, game manager, socket handlers)
   app/            # Next.js pages
   components/     # React components (lobby, game board, UI; `boardTheme.js`, `boardSlotGrid.js` slot layout for Board)
