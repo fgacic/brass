@@ -740,7 +740,7 @@ export function Board({ gameState, playerId, boardFx = null }) {
   const drawnPairs = new Set();
   const tileFlipSet = new Set(boardFx?.tileFlipIds || []);
 
-  const [legendHeldHover, setLegendHeldHover] = useState(false);
+  const [heldLegendId, setHeldLegendId] = useState(null);
   const legendHoldTimerRef = useRef(null);
 
   const clearLegendHoldTimer = useCallback(() => {
@@ -750,20 +750,42 @@ export function Board({ gameState, playerId, boardFx = null }) {
     }
   }, []);
 
-  const onLegendPointerEnter = useCallback(() => {
-    clearLegendHoldTimer();
-    legendHoldTimerRef.current = setTimeout(() => {
-      setLegendHeldHover(true);
-      legendHoldTimerRef.current = null;
-    }, 1000);
-  }, [clearLegendHoldTimer]);
+  const onLegendPointerEnter = useCallback(
+    (id) => {
+      clearLegendHoldTimer();
+      legendHoldTimerRef.current = setTimeout(() => {
+        setHeldLegendId(id);
+        legendHoldTimerRef.current = null;
+      }, 1000);
+    },
+    [clearLegendHoldTimer]
+  );
 
   const onLegendPointerLeave = useCallback(() => {
     clearLegendHoldTimer();
-    setLegendHeldHover(false);
+    setHeldLegendId(null);
   }, [clearLegendHoldTimer]);
 
   useEffect(() => () => clearLegendHoldTimer(), [clearLegendHoldTimer]);
+
+  const legendHoldSpring = {
+    type: "spring",
+    stiffness: 320,
+    damping: 26,
+    mass: 0.72,
+  };
+
+  const legendHoldAnimate = useCallback(
+    (id) => ({
+      scale: reduceMotion ? 1 : heldLegendId === id ? 1.5 : 1,
+      boxShadow: reduceMotion
+        ? "0 10px 15px -3px rgba(0,0,0,0.45), 0 4px 6px -4px rgba(0,0,0,0.35)"
+        : heldLegendId === id
+        ? "0 25px 50px -12px rgba(0,0,0,0.55), 0 0 0 1px rgba(251,191,36,0.12)"
+        : "0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -4px rgba(0,0,0,0.35)",
+    }),
+    [heldLegendId, reduceMotion]
+  );
 
   return (
     <div className="relative w-full h-full overflow-visible">
@@ -1481,8 +1503,16 @@ export function Board({ gameState, playerId, boardFx = null }) {
         })}
       </svg>
 
-      {/* Link type legend */}
-      <div className="pointer-events-none absolute top-2 left-2 flex flex-col gap-1 rounded-lg border border-amber-900/30 bg-[#14100e]/92 px-2.5 py-2 shadow-lg shadow-black/40 backdrop-blur-sm ring-1 ring-white/5">
+      {/* Link type legend — hold pointer 1s to enlarge (same as industries) */}
+      <m.div
+        className="absolute top-2 left-2 z-20 flex cursor-pointer flex-col gap-1 rounded-lg border border-amber-900/30 bg-[#14100e]/92 px-2.5 py-2 backdrop-blur-sm ring-1 ring-white/5"
+        style={{ transformOrigin: "top left" }}
+        title="Hold pointer here for 1 second to enlarge the legend"
+        onPointerEnter={() => onLegendPointerEnter("link")}
+        onPointerLeave={onLegendPointerLeave}
+        animate={legendHoldAnimate("link")}
+        transition={legendHoldSpring}
+      >
         {[
           { label: "Canal", dash: "2 4" },
           { label: "Rail", dash: "8 4" },
@@ -1505,24 +1535,17 @@ export function Board({ gameState, playerId, boardFx = null }) {
             </span>
           </div>
         ))}
-      </div>
+      </m.div>
 
       {/* Industry letters + merchant notes — hold pointer 1s here to enlarge (Motion) */}
       <m.div
         className="absolute top-2 right-2 z-20 flex max-h-[min(50vh,320px)] w-fit cursor-pointer flex-col gap-1 overflow-y-auto rounded-lg border border-amber-900/30 bg-[#14100e]/92 px-2 py-1.5 backdrop-blur-sm ring-1 ring-white/5"
         style={{ transformOrigin: "top right" }}
         title="Hold pointer here for 1 second to enlarge the legend"
-        onPointerEnter={onLegendPointerEnter}
+        onPointerEnter={() => onLegendPointerEnter("industries")}
         onPointerLeave={onLegendPointerLeave}
-        animate={{
-          scale: reduceMotion ? 1 : legendHeldHover ? 1.5 : 1,
-          boxShadow: reduceMotion
-            ? "0 10px 15px -3px rgba(0,0,0,0.45), 0 4px 6px -4px rgba(0,0,0,0.35)"
-            : legendHeldHover
-            ? "0 25px 50px -12px rgba(0,0,0,0.55), 0 0 0 1px rgba(251,191,36,0.12)"
-            : "0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -4px rgba(0,0,0,0.35)",
-        }}
-        transition={{ type: "spring", stiffness: 320, damping: 26, mass: 0.72 }}
+        animate={legendHoldAnimate("industries")}
+        transition={legendHoldSpring}
       >
         <span className="whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.1em] text-amber-200/45">
           Industries
@@ -1558,13 +1581,15 @@ export function Board({ gameState, playerId, boardFx = null }) {
         </p>
       </m.div>
 
-      {/* Build costs by tier — hover to enlarge (bottom-left anchor) */}
+      {/* Build costs by tier — hold pointer 1s to enlarge (same as industries) */}
       <m.div
-        className="absolute bottom-2 left-2 z-20 flex max-h-[min(45vh,280px)] w-max max-w-[11rem] cursor-pointer flex-col gap-0.5 overflow-y-auto rounded-lg border border-amber-900/30 bg-[#14100e]/92 px-2 py-1.5 shadow-lg shadow-black/40 backdrop-blur-sm ring-1 ring-white/5"
+        className="absolute bottom-2 left-2 z-20 flex max-h-[min(45vh,280px)] w-max max-w-[11rem] cursor-pointer flex-col gap-0.5 overflow-y-auto rounded-lg border border-amber-900/30 bg-[#14100e]/92 px-2 py-1.5 backdrop-blur-sm ring-1 ring-white/5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         style={{ transformOrigin: "bottom left" }}
-        title="Build costs per level: £ and resources (hover to enlarge)"
-        whileHover={reduceMotion ? undefined : { scale: 1.2 }}
-        transition={{ type: "spring", stiffness: 400, damping: 28 }}
+        title="Hold pointer here for 1 second to enlarge the legend"
+        onPointerEnter={() => onLegendPointerEnter("build")}
+        onPointerLeave={onLegendPointerLeave}
+        animate={legendHoldAnimate("build")}
+        transition={legendHoldSpring}
       >
         <span className="whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.1em] text-amber-200/45">
           Build costs
