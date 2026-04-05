@@ -5,6 +5,7 @@ Online multiplayer implementation of the board game Brass: Birmingham for 2-4 pl
 ## Tech Stack
 
 - **Next.js 15** - App Router, React 19
+- **@vercel/analytics** - Web analytics (`<Analytics />` in `src/app/layout.js`; active when deployed on Vercel)
 - **Socket.IO** - Real-time multiplayer communication
 - **Zustand** - Client-side state management
 - **Tailwind CSS** - Styling (warm brass / industrial palette; **DM Sans** body + **Lora** display via `next/font` in `layout.js`)
