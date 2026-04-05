@@ -1,8 +1,16 @@
 'use client'
 
 import { useLayoutEffect, useRef, useState } from 'react'
+import { ROUNDS_PER_ERA } from '@/game/constants'
 import { PLAYER_COLOR_HEX } from './boardTheme'
 import { m, useReducedMotion } from './motionConfig'
+
+function canalFullRoundsUntilRail (gameState) {
+  if (gameState.era !== 'canal' || gameState.phase === 'gameOver') return null
+  const total = ROUNDS_PER_ERA[gameState.playerCount]
+  if (total == null) return null
+  return Math.max(0, total - gameState.round + 1)
+}
 
 function useTurnOrderHighlightBox (currentPlayerId, turnOrderKey) {
   const rowRef = useRef(null)
@@ -49,6 +57,7 @@ export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan })
   const currentPlayer = gameState.players.find(p => p.id === currentPlayerId)
   const isMyTurn = currentPlayerId === playerId
   const myPlayer = gameState.players.find(p => p.id === playerId)
+  const canalRoundsLeft = canalFullRoundsUntilRail(gameState)
 
   return (
     <m.div
@@ -83,7 +92,7 @@ export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan })
         )}
       </div>
 
-      <div className="flex min-w-0 max-w-full items-center justify-end">
+      <div className="flex min-w-0 max-w-full items-center justify-end gap-2 sm:gap-3">
         <span className="mr-1.5 hidden shrink-0 text-[8px] font-bold uppercase tracking-wider text-amber-200/45 md:inline">
           Order
         </span>
@@ -195,6 +204,24 @@ export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan })
             ]
           })}
         </div>
+        {canalRoundsLeft !== null && (
+          <div
+            className="shrink-0 rounded-md border border-sky-900/50 bg-gradient-to-b from-sky-950/50 to-slate-950/60 px-2 py-1 text-right shadow-sm shadow-black/20"
+            title="Full table rounds left in canal era at this player count (rulebook: 10 / 9 / 8 for 2–4 players). The game switches to rail when the draw pile and all hands are empty at end of a round, which usually aligns with this count."
+          >
+            <div className="text-[7px] font-bold uppercase leading-none tracking-wider text-sky-300/55">
+              Rail era
+            </div>
+            <div className="mt-0.5 flex items-baseline justify-end gap-1 leading-none">
+              <span className="text-lg font-bold tabular-nums text-sky-100 sm:text-xl">
+                {canalRoundsLeft}
+              </span>
+              <span className="text-[9px] font-medium text-sky-200/50">
+                {canalRoundsLeft === 1 ? 'round' : 'rounds'}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </m.div>
   )
