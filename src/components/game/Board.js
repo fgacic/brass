@@ -12,6 +12,7 @@ import {
 } from './boardTheme'
 import { m, useReducedMotion } from './motionConfig'
 import { computeSlotGridGeometry } from './boardSlotGrid'
+import { industryDefinitions } from '@/game/data/industries'
 
 // Static connection metadata (canal/rail flags) — must mirror board-connections.js
 const CONNECTION_META = {
@@ -59,6 +60,22 @@ const LINK_STYLE = {
   canal: { stroke: '#a8a29e', dash: '2 4',   width: 2 },   // dots  . . .
   rail:  { stroke: '#a8a29e', dash: '8 4',   width: 2 },   // dashes  — — —
   both:  { stroke: '#a8a29e', dash: '8 4 2 4', width: 2 }, // dash-dot  —.—.
+}
+
+function dedupeTiersByLevel (tilesPerPlayer) {
+  const byLevel = new Map()
+  for (const row of tilesPerPlayer || []) {
+    if (!byLevel.has(row.level)) byLevel.set(row.level, row)
+  }
+  return Array.from(byLevel.values()).sort((a, b) => a.level - b.level)
+}
+
+function formatBuildCostResourceSuffix (row) {
+  const parts = []
+  if (row.coalCost > 0) parts.push(`${row.coalCost}K`)
+  if (row.ironCost > 0) parts.push(`${row.ironCost}I`)
+  if ((row.beerCost || 0) > 0) parts.push(`${row.beerCost}B`)
+  return parts.length ? ` · ${parts.join(' ')}` : ''
 }
 
 const DEFAULT_VB = { x: -20, y: -20, w: 660, h: 720 }
@@ -1066,6 +1083,56 @@ export function Board ({ gameState, playerId, boardFx = null }) {
         <p className="w-fit max-w-[9.5rem] border-t border-amber-900/25 pt-1 text-[8px] leading-snug text-amber-100/38">
           Triple C/M/P disc: one demand strip, one beer below it. Map tooltips on hover.
         </p>
+      </m.div>
+
+      {/* Build costs by tier — hover to enlarge (bottom-left anchor) */}
+      <m.div
+        className="absolute bottom-2 left-2 z-20 flex max-h-[min(45vh,280px)] w-max max-w-[11rem] cursor-pointer flex-col gap-0.5 overflow-y-auto rounded-lg border border-amber-900/30 bg-[#14100e]/92 px-2 py-1.5 shadow-lg shadow-black/40 backdrop-blur-sm ring-1 ring-white/5"
+        style={{ transformOrigin: 'bottom left' }}
+        title="Build costs per level: £ and resources (hover to enlarge)"
+        whileHover={reduceMotion ? undefined : { scale: 1.2 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+      >
+        <span className="whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.1em] text-amber-200/45">
+          Build costs
+        </span>
+        <span className="text-[8px] leading-tight text-amber-100/40">
+          £ + K coal, I iron, B beer
+        </span>
+        {INDUSTRY_LEGEND_ORDER.map((industryId, idx) => {
+          const def = industryDefinitions[industryId]
+          if (!def) return null
+          const tiers = dedupeTiersByLevel(def.tilesPerPlayer)
+          return (
+            <div
+              key={industryId}
+              className={idx > 0 ? 'mt-1 border-t border-amber-900/25 pt-1' : 'mt-0.5'}
+            >
+              <div className="mb-0.5 flex w-max items-center gap-1">
+                <span
+                  className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-black/40 text-[8px] font-bold text-white shadow-sm"
+                  style={{ backgroundColor: INDUSTRY_COLORS[industryId] }}
+                >
+                  {INDUSTRY_LETTERS[industryId]}
+                </span>
+                <span className="truncate text-[9px] font-semibold text-[#ddd6cc]">
+                  {INDUSTRY_LABEL[industryId]}
+                </span>
+              </div>
+              <ul className="space-y-0.5 pl-0.5">
+                {tiers.map((row) => (
+                  <li
+                    key={row.level}
+                    className="whitespace-nowrap font-mono text-[8px] leading-snug text-amber-100/65"
+                  >
+                    L{row.level} £{row.cost}
+                    {formatBuildCostResourceSuffix(row)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )
+        })}
       </m.div>
 
       {/* Zoom controls */}
