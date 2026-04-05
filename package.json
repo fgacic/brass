@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node server.js",
+    "dev:lobby": "BRASS_DEV_LOBBY=1 NEXT_PUBLIC_BRASS_DEV_LOBBY=1 node server.js",
     "dev:ngrok": "node server-ngrok.js",
     "build": "next build",
     "start": "NODE_ENV=production node server.js",

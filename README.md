@@ -42,6 +42,8 @@ yarn dev
 
 Dependencies are managed with **Yarn** (`yarn.lock`). Open `http://localhost:3000` in your browser.
 
+**Dev quick lobby (optional, local testing):** run `yarn dev:lobby` (or `chmod +x scripts/dev-lobby.sh && ./scripts/dev-lobby.sh`) instead of `yarn dev`. That sets `BRASS_DEV_LOBBY=1` and `NEXT_PUBLIC_BRASS_DEV_LOBBY=1`. The home page shows **Quick join dev room** — no room code; the first connection creates a shared waiting room (default code `DEVLO`), later tabs join it. Host starts the game as usual. The server rejects `room:devJoin` unless `BRASS_DEV_LOBBY=1` and `NODE_ENV` is not `production`. Override the code with `BRASS_DEV_ROOM_CODE` (five alphanumeric characters after normalization). For `yarn dev:ngrok`, export the same variables before starting if you need the dev UI over the tunnel.
+
 **Ngrok (optional):** run `npx ngrok config add-authtoken YOUR_TOKEN` once (token from [ngrok dashboard](https://dashboard.ngrok.com/get-started/your-authtoken)), or set `NGROK_AUTHTOKEN` in `.env.local` (gitignored). Then `yarn dev:ngrok` or `yarn start:ngrok`. Do not commit secrets.
 
 **Hand cards:** each card can show the **next tile on your mat** build cost (`Hand.js`): £, coal, iron, and beer from `playerMat[industry][0]`. Location / wild location cards show the same once **Build** is active and an industry is chosen in the action panel (`buildIndustry` in `gameStore`).

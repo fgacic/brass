@@ -1,7 +1,23 @@
-const { createRoom, joinRoom, leaveRoom, getRoom, getRoomByPlayerId } = require('./rooms')
+const {
+  createRoom,
+  joinRoom,
+  leaveRoom,
+  getRoom,
+  getRoomByPlayerId,
+  joinOrCreateDevLobby,
+} = require('./rooms')
 const { startGame, handleAction, filterStateForPlayer } = require('./game-manager')
 
 const playerSockets = new Map()
+
+function isDevLobbyServerEnabled () {
+  return process.env.BRASS_DEV_LOBBY === '1' && process.env.NODE_ENV !== 'production'
+}
+
+function devLobbyRoomCode () {
+  const raw = (process.env.BRASS_DEV_ROOM_CODE || 'DEVLO').toUpperCase().replace(/[^A-Z0-9]/g, '')
+  return raw.length >= 5 ? raw.slice(0, 5) : 'DEVLO'
+}
 
 function registerSocketHandlers (io) {
   io.on('connection', (socket) => {
@@ -17,6 +33,36 @@ function registerSocketHandlers (io) {
       currentRoomCode = room.code
       socket.join(room.code)
       playerSockets.set(playerId, socket.id)
+
+      callback({ success: true, room: sanitizeRoom(room), playerId })
+    })
+
+    socket.on('room:devJoin', ({ playerName }, callback) => {
+      if (!isDevLobbyServerEnabled()) {
+        callback({ success: false, error: 'Dev lobby is disabled' })
+        return
+      }
+
+      const name = (playerName && String(playerName).trim()) || `Dev ${Math.random().toString(36).slice(2, 6)}`
+      const playerId = `player_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+      currentPlayerId = playerId
+      const player = { id: playerId, name: name.slice(0, 20) }
+
+      const result = joinOrCreateDevLobby(player, devLobbyRoomCode())
+      if (result.error) {
+        callback({ success: false, error: result.error })
+        currentPlayerId = null
+        return
+      }
+
+      const room = result.room
+      currentRoomCode = room.code
+      socket.join(room.code)
+      playerSockets.set(playerId, socket.id)
+
+      if (room.players.length > 1) {
+        io.to(room.code).emit('room:updated', sanitizeRoom(room))
+      }
 
       callback({ success: true, room: sanitizeRoom(room), playerId })
     })

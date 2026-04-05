@@ -51,6 +51,18 @@ export function useSocket () {
     })
   }, [setRoom, setPlayerId, setError])
 
+  const devQuickJoin = useCallback((playerName) => {
+    const socket = getSocket()
+    socket.emit('room:devJoin', { playerName: playerName || '' }, (response) => {
+      if (response.success) {
+        setRoom(response.room)
+        setPlayerId(response.playerId)
+      } else {
+        setError(response.error || 'Dev join failed')
+      }
+    })
+  }, [setRoom, setPlayerId, setError])
+
   const startGame = useCallback(() => {
     const socket = getSocket()
     socket.emit('room:start', (response) => {
@@ -77,5 +89,5 @@ export function useSocket () {
     })
   }, [setRoom, setPlayerId])
 
-  return { createRoom, joinRoom, startGame, leaveRoom, reconnect }
+  return { createRoom, joinRoom, devQuickJoin, startGame, leaveRoom, reconnect }
 }

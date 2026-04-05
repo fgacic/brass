@@ -7,8 +7,10 @@ import { useGameStore } from '@/store/gameStore'
 import { WaitingRoom } from '@/components/lobby/WaitingRoom'
 import { GameView } from '@/components/game/GameView'
 
+const devLobbyClientEnabled = process.env.NEXT_PUBLIC_BRASS_DEV_LOBBY === '1'
+
 export default function Home () {
-  const { createRoom, joinRoom, startGame, leaveRoom } = useSocket()
+  const { createRoom, joinRoom, devQuickJoin, startGame, leaveRoom } = useSocket()
   const { room, playerId, error, isConnected } = useLobbyStore()
   const { gameState } = useGameStore()
   const [name, setName] = useState('')
@@ -55,6 +57,29 @@ export default function Home () {
 
         {!mode && (
           <div className="space-y-3">
+            {devLobbyClientEnabled && (
+              <div className="space-y-2 rounded-xl border border-emerald-800/40 bg-emerald-950/25 p-3">
+                <p className="text-center text-[10px] font-semibold uppercase tracking-wider text-emerald-200/70">
+                  Dev lobby (no code)
+                </p>
+                <input
+                  type="text"
+                  placeholder="Name (optional)"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full rounded-lg border border-emerald-900/50 bg-[#0f0c0a]/80 py-2 px-3 text-sm text-[#faf7f2] placeholder:text-stone-500 shadow-inner focus:border-emerald-600/60 focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+                  maxLength={20}
+                />
+                <button
+                  type="button"
+                  onClick={() => devQuickJoin(name.trim())}
+                  disabled={!isConnected}
+                  className="w-full rounded-lg border border-emerald-600/40 bg-gradient-to-b from-emerald-800 to-emerald-950 py-2.5 px-3 text-sm font-semibold text-emerald-50 shadow-md transition enabled:hover:from-emerald-700 enabled:hover:to-emerald-900 enabled:active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Quick join dev room
+                </button>
+              </div>
+            )}
             <button
               onClick={() => setMode('create')}
               className="w-full rounded-xl border border-amber-500/35 bg-gradient-to-b from-amber-600 to-amber-900 py-3.5 px-4 font-semibold text-amber-50 shadow-lg shadow-amber-950/40 transition hover:from-amber-500 hover:to-amber-800 hover:shadow-amber-900/30 active:scale-[0.99]"
