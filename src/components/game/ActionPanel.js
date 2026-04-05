@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useGameStore } from '@/store/gameStore'
 import { useGameActions } from '@/hooks/useGameActions'
 import { m, useReducedMotion } from './motionConfig'
+import { pickMerchantLocationForSell } from '@/game/engine/merchantSell'
 
 const ACTIONS = [
   { type: 'build', label: 'Build', desc: 'Place an industry tile' },
@@ -22,17 +23,6 @@ const INDUSTRY_LABELS = {
   ironWorks: 'Iron',
   brewery: 'Brewery',
   pottery: 'Pottery',
-}
-
-function pickMerchantAccepting (merchants, industry) {
-  const entries = Object.entries(merchants || {}).filter(([, m]) => {
-    if (m.demandSlots?.length) {
-      return m.demandSlots.some((s) => (s.acceptedIndustries || []).includes(industry))
-    }
-    return Array.isArray(m.acceptedIndustries) && m.acceptedIndustries.includes(industry)
-  })
-  entries.sort((a, b) => a[0].localeCompare(b[0]))
-  return entries[0]?.[0] ?? null
 }
 
 function formatLocName (id) {
@@ -406,12 +396,15 @@ export function ActionPanel ({ gameState, playerId }) {
                         if (isSel) {
                           setSellTiles(sellTiles.filter(s => s.tileId !== tile.id))
                         } else {
-                          const merchantId = pickMerchantAccepting(
+                          const merchantId = pickMerchantLocationForSell(
+                            gameState.board.links,
+                            gameState.era,
                             gameState.board.merchants,
+                            tile.locationId,
                             tile.industry
                           )
                           if (!merchantId) {
-                            setActionError('No merchant city demands this industry')
+                            setActionError('No in-play merchant with demand is connected to this tile')
                             return
                           }
                           clearActionError()
