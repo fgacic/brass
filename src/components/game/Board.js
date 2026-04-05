@@ -170,10 +170,13 @@ function renderMerchantDemandBadges (pos, baseR, slots, keyPrefix) {
   )
 }
 
-function renderSlotGridEmptyCell ({ keyPrefix, cx, cy, x, y, size, industries }) {
+const PAIRING_STROKE = '#38bdf8'
+
+function renderSlotGridEmptyCell ({ keyPrefix, cx, cy, x, y, size, industries, pairingIndustry = null }) {
   if (!industries.length) return null
   if (industries.length === 1) {
     const ind = industries[0]
+    const showPair = pairingIndustry && pairingIndustry === ind
     return (
       <g key={keyPrefix} pointerEvents="none">
         <rect
@@ -184,6 +187,14 @@ function renderSlotGridEmptyCell ({ keyPrefix, cx, cy, x, y, size, industries })
           x={x + 2} y={y + 2} width={size - 4} height={size - 4} rx={1}
           fill={INDUSTRY_COLORS[ind] || '#555'} opacity={0.88}
         />
+        {showPair && (
+          <rect
+            x={x + 1.5} y={y + 1.5} width={size - 3} height={size - 3} rx={1.5}
+            fill="none" stroke={PAIRING_STROKE} strokeWidth={2} opacity={0.92}
+          >
+            <animate attributeName="opacity" values="0.55;1;0.55" dur="1.6s" repeatCount="indefinite" />
+          </rect>
+        )}
         <text
           x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle"
           fill="white" fontSize="8" fontWeight="bold"
@@ -195,6 +206,10 @@ function renderSlotGridEmptyCell ({ keyPrefix, cx, cy, x, y, size, industries })
   }
   const [ind0, ind1] = industries
   const mid = x + size / 2
+  const pairLeft = pairingIndustry && pairingIndustry === ind0
+  const pairRight = pairingIndustry && pairingIndustry === ind1
+  const dLeft = `M ${x} ${y} L ${mid} ${y} L ${mid} ${y + size} L ${x} ${y + size} Z`
+  const dRight = `M ${mid} ${y} L ${x + size} ${y} L ${x + size} ${y + size} L ${mid} ${y + size} Z`
   return (
     <g key={keyPrefix} pointerEvents="none">
       <rect
@@ -202,16 +217,40 @@ function renderSlotGridEmptyCell ({ keyPrefix, cx, cy, x, y, size, industries })
         fill="#131110" stroke="#57534e" strokeWidth={1.2}
       />
       <path
-        d={`M ${x} ${y} L ${mid} ${y} L ${mid} ${y + size} L ${x} ${y + size} Z`}
+        d={dLeft}
         fill={INDUSTRY_COLORS[ind0] || '#555'}
         opacity={0.9}
       />
       <path
-        d={`M ${mid} ${y} L ${x + size} ${y} L ${x + size} ${y + size} L ${mid} ${y + size} Z`}
+        d={dRight}
         fill={INDUSTRY_COLORS[ind1] || '#555'}
         opacity={0.9}
       />
       <line x1={mid} y1={y} x2={mid} y2={y + size} stroke="#1c1917" strokeWidth={1} />
+      {pairLeft && (
+        <path
+          d={dLeft}
+          fill="none"
+          stroke={PAIRING_STROKE}
+          strokeWidth={2}
+          strokeLinejoin="miter"
+          opacity={0.92}
+        >
+          <animate attributeName="opacity" values="0.55;1;0.55" dur="1.6s" repeatCount="indefinite" />
+        </path>
+      )}
+      {pairRight && (
+        <path
+          d={dRight}
+          fill="none"
+          stroke={PAIRING_STROKE}
+          strokeWidth={2}
+          strokeLinejoin="miter"
+          opacity={0.92}
+        >
+          <animate attributeName="opacity" values="0.55;1;0.55" dur="1.6s" repeatCount="indefinite" />
+        </path>
+      )}
       <text
         x={cx - 3.5} y={cy + 1} textAnchor="middle" dominantBaseline="middle"
         fill="white" fontSize="7" fontWeight="bold"
@@ -229,7 +268,7 @@ function renderSlotGridEmptyCell ({ keyPrefix, cx, cy, x, y, size, industries })
 }
 
 export function Board ({ gameState, playerId, boardFx = null }) {
-  const { targetingMode, selectedTargets, addTarget, selectedAction, selectedCard } = useGameStore()
+  const { targetingMode, selectedTargets, addTarget, setLocationTarget, selectedAction, selectedCard, buildIndustry } = useGameStore()
   const reduceMotion = useReducedMotion()
   const svgRef = useRef(null)
   const [vb, setVb] = useState({ ...DEFAULT_VB })
@@ -239,10 +278,14 @@ export function Board ({ gameState, playerId, boardFx = null }) {
   const selectedLocationId = selectedTargets.find(t => t.type === 'location')?.id || null
   const selectedConnectionIds = new Set(selectedTargets.filter(t => t.type === 'connection').map(t => t.id))
 
-  // Compute which locations are valid targets when a card is selected during build
   const myPlayer = gameState.players.find(p => p.id === playerId)
   const selectedCardObj = myPlayer?.hand?.find(c => c.id === selectedCard) || null
-  const buildValidLocations = buildValidLocationSet(selectedAction, selectedCardObj, gameState)
+  const buildValidLocations = buildValidLocationSet(selectedAction, selectedCardObj, gameState, buildIndustry)
+
+  const buildPairingIndustry =
+    selectedAction === 'build' && targetingMode === 'location'
+      ? (buildIndustry || (selectedCardObj?.type === 'industry' ? selectedCardObj.industry : null))
+      : null
 
   const handleLocationClick = useCallback((e, locationId) => {
     if (panRef.current.hasDragged) return
@@ -384,6 +427,21 @@ export function Board ({ gameState, playerId, boardFx = null }) {
   }, [])
 
   const resetView = useCallback(() => setVb({ ...DEFAULT_VB }), [])
+
+  useEffect(() => {
+    if (selectedAction !== 'build' || targetingMode !== 'location') return
+    if (!selectedCardObj || selectedCardObj.type !== 'location' || !selectedCardObj.locationId) return
+    const pos = LOCATION_POSITIONS[selectedCardObj.locationId]
+    if (!pos) return
+
+    setLocationTarget(selectedCardObj.locationId)
+    setVb(prev => ({
+      x: pos.x - prev.w / 2,
+      y: pos.y - prev.h / 2,
+      w: prev.w,
+      h: prev.h,
+    }))
+  }, [selectedAction, targetingMode, selectedCard, selectedCardObj?.locationId, selectedCardObj?.type, setLocationTarget])
 
   const drawnPairs = new Set()
   const tileFlipSet = new Set(boardFx?.tileFlipIds || [])
@@ -742,6 +800,7 @@ export function Board ({ gameState, playerId, boardFx = null }) {
                         y,
                         size,
                         industries: slot.allowedIndustries || [],
+                        pairingIndustry: buildPairingIndustry,
                       })
                     })}
                   </g>
@@ -1040,23 +1099,37 @@ export function Board ({ gameState, playerId, boardFx = null }) {
   )
 }
 
-function buildValidLocationSet (selectedAction, cardObj, gameState) {
-  if (selectedAction !== 'build' || !cardObj) return null
-  if (cardObj.type === 'wildLocation' || cardObj.type === 'wildIndustry') return null
+function locationIdsWithEmptySlotForIndustry (gameState, industry) {
+  const valid = new Set()
+  if (!industry || !gameState?.board?.locations) return valid
+  for (const [locId, boardLoc] of Object.entries(gameState.board.locations)) {
+    const hasSlot = boardLoc.slots?.some(
+      s => s.tileId === null && (s.allowedIndustries || []).includes(industry)
+    )
+    if (hasSlot) valid.add(locId)
+  }
+  return valid
+}
+
+function buildValidLocationSet (selectedAction, cardObj, gameState, buildIndustry) {
+  if (selectedAction !== 'build') return null
+
+  if (!cardObj) {
+    if (buildIndustry) return locationIdsWithEmptySlotForIndustry(gameState, buildIndustry)
+    return null
+  }
+
+  if (cardObj.type === 'wildLocation' || cardObj.type === 'wildIndustry') {
+    if (buildIndustry) return locationIdsWithEmptySlotForIndustry(gameState, buildIndustry)
+    return null
+  }
 
   if (cardObj.type === 'location') {
     return new Set([cardObj.locationId])
   }
 
   if (cardObj.type === 'industry') {
-    const valid = new Set()
-    for (const [locId, boardLoc] of Object.entries(gameState.board.locations)) {
-      const hasSlot = boardLoc.slots.some(
-        s => s.tileId === null && (s.allowedIndustries || []).includes(cardObj.industry)
-      )
-      if (hasSlot) valid.add(locId)
-    }
-    return valid
+    return locationIdsWithEmptySlotForIndustry(gameState, cardObj.industry)
   }
 
   return null

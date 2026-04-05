@@ -53,11 +53,11 @@ export function ActionPanel ({ gameState, playerId }) {
     actionSubmitting, actionErrorTick,
     resetAction, setActionError, clearActionError,
     buildIndustry, setBuildIndustry,
+    developIndustries, setDevelopIndustries,
+    sellTiles, setSellTiles,
   } = useGameStore()
   const { build, network, develop, sell, loan, scout, pass } = useGameActions()
   const reduceMotion = useReducedMotion()
-  const [developIndustries, setDevelopIndustries] = useState([])
-  const [sellTiles, setSellTiles] = useState([])
   const [showDebug, setShowDebug] = useState(false)
 
   const myPlayer = gameState.players.find(p => p.id === playerId)
@@ -97,9 +97,6 @@ export function ActionPanel ({ gameState, playerId }) {
   const handleActionSelect = (actionType) => {
     clearActionError()
     setSelectedAction(actionType)
-    setBuildIndustry(null)
-    setDevelopIndustries([])
-    setSellTiles([])
 
     switch (actionType) {
       case 'build':
@@ -115,9 +112,6 @@ export function ActionPanel ({ gameState, playerId }) {
 
   const handleCancel = () => {
     resetAction()
-    setBuildIndustry(null)
-    setDevelopIndustries([])
-    setSellTiles([])
   }
 
   const getMissingSteps = () => {
@@ -326,6 +320,8 @@ export function ActionPanel ({ gameState, playerId }) {
                 const isEnabled = hasTiles && allowedHere && allowedByCard
                 if (locationAllowedIndustries && !allowedHere) return null
                 if (selectedCardObj?.type === 'industry' && !allowedByCard) return null
+                const industryMatchesCard =
+                  selectedCardObj?.type === 'industry' && selectedCardObj.industry === ind
                 return (
                   <button
                     key={ind}
@@ -333,9 +329,13 @@ export function ActionPanel ({ gameState, playerId }) {
                     disabled={!isEnabled}
                     className={`rounded-md border px-2 py-1 text-xs font-medium transition ${
                       buildIndustry === ind
-                        ? 'border-amber-400/60 bg-gradient-to-b from-amber-500 to-amber-800 text-white shadow-md shadow-amber-950/40'
+                        ? `border-amber-400/60 bg-gradient-to-b from-amber-500 to-amber-800 text-white shadow-md shadow-amber-950/40 ${
+                          industryMatchesCard ? 'ring-2 ring-sky-400/50 ring-offset-2 ring-offset-[#14100d]' : ''
+                        }`
                         : isEnabled
-                          ? 'border-stone-600/40 bg-gradient-to-b from-stone-600 to-stone-800 text-stone-100 hover:from-stone-500 hover:to-stone-700'
+                          ? `border-stone-600/40 bg-gradient-to-b from-stone-600 to-stone-800 text-stone-100 hover:from-stone-500 hover:to-stone-700 ${
+                            industryMatchesCard ? 'ring-2 ring-sky-400/40 ring-offset-2 ring-offset-[#14100d]' : ''
+                          }`
                           : 'cursor-not-allowed border-stone-800 bg-stone-900/60 text-stone-600'
                     }`}
                   >
@@ -356,6 +356,8 @@ export function ActionPanel ({ gameState, playerId }) {
               {Object.entries(myPlayer?.playerMat || {}).map(([ind, tiles]) => {
                 if (tiles.length === 0) return null
                 const isSelected = developIndustries.includes(ind)
+                const developMatchesCard =
+                  selectedCardObj?.type === 'industry' && selectedCardObj.industry === ind
                 return (
                   <button
                     key={ind}
@@ -368,8 +370,14 @@ export function ActionPanel ({ gameState, playerId }) {
                     }}
                     className={`rounded-md border px-2 py-1 text-xs font-medium transition ${
                       isSelected
-                        ? 'border-amber-400/60 bg-gradient-to-b from-amber-500 to-amber-800 text-white shadow-md'
-                        : 'border-stone-600/40 bg-gradient-to-b from-stone-600 to-stone-800 text-stone-100 hover:from-stone-500 hover:to-stone-700'
+                        ? `border-amber-400/60 bg-gradient-to-b from-amber-500 to-amber-800 text-white shadow-md ${
+                          developMatchesCard ? 'ring-2 ring-sky-400/45 ring-offset-2 ring-offset-[#14100d]' : ''
+                        }`
+                        : `border-stone-600/40 bg-gradient-to-b from-stone-600 to-stone-800 text-stone-100 hover:from-stone-500 hover:to-stone-700 ${
+                          developMatchesCard && !isSelected
+                            ? 'ring-2 ring-sky-400/40 ring-offset-2 ring-offset-[#14100d]'
+                            : ''
+                        }`
                     }`}
                   >
                     {INDUSTRY_LABELS[ind] || ind} (L{tiles[0].level})
@@ -389,6 +397,8 @@ export function ActionPanel ({ gameState, playerId }) {
                 .filter(t => t.ownerId === playerId && !t.isFlipped && t.flipsOnSell)
                 .map(tile => {
                   const isSel = sellTiles.some(s => s.tileId === tile.id)
+                  const sellMatchesCard =
+                    selectedCardObj?.type === 'industry' && selectedCardObj.industry === tile.industry
                   return (
                     <button
                       key={tile.id}
@@ -414,8 +424,14 @@ export function ActionPanel ({ gameState, playerId }) {
                       }}
                       className={`rounded-md border px-2 py-1 text-xs font-medium transition ${
                         isSel
-                          ? 'border-amber-400/60 bg-gradient-to-b from-amber-500 to-amber-800 text-white shadow-md'
-                          : 'border-stone-600/40 bg-gradient-to-b from-stone-600 to-stone-800 text-stone-100 hover:from-stone-500 hover:to-stone-700'
+                          ? `border-amber-400/60 bg-gradient-to-b from-amber-500 to-amber-800 text-white shadow-md ${
+                            sellMatchesCard ? 'ring-2 ring-sky-400/45 ring-offset-2 ring-offset-[#14100d]' : ''
+                          }`
+                          : `border-stone-600/40 bg-gradient-to-b from-stone-600 to-stone-800 text-stone-100 hover:from-stone-500 hover:to-stone-700 ${
+                            sellMatchesCard && !isSel
+                              ? 'ring-2 ring-sky-400/40 ring-offset-2 ring-offset-[#14100d]'
+                              : ''
+                          }`
                       }`}
                     >
                       L{tile.level} {INDUSTRY_LABELS[tile.industry] || tile.industry}

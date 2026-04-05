@@ -1,7 +1,7 @@
 const { ERA, CANAL_LINK_COST, SINGLE_RAIL_COST, DOUBLE_RAIL_COST } = require('../../constants')
 const { deepClone, getPlayerById } = require('../state')
-const { connections, getConnectionBetween } = require('../../data/board-connections')
-const { isInPlayerNetwork, playerHasNoTilesOnBoard } = require('../pathfinding')
+const { connections } = require('../../data/board-connections')
+const { validateNewLinksTouchPlayerNetwork } = require('../pathfinding')
 const { consumeCoal, consumeBeer, canAffordCoal, countAvailableBeer } = require('../resources')
 const { advanceTurn } = require('../turn')
 
@@ -22,11 +22,8 @@ function validateNetwork (state, playerId, { cardId, connectionIds }) {
     const link = state.board.links[conn.id]
     if (link && link.ownerId !== null) return { valid: false, reason: 'Link already built' }
 
-    if (!playerHasNoTilesOnBoard(state, playerId)) {
-      if (!isInPlayerNetwork(state, playerId, conn.from) && !isInPlayerNetwork(state, playerId, conn.to)) {
-        return { valid: false, reason: 'Must be adjacent to your network' }
-      }
-    }
+    const touch = validateNewLinksTouchPlayerNetwork(state, playerId, [conn.id])
+    if (!touch.ok) return { valid: false, reason: touch.reason }
 
     if (player.money < CANAL_LINK_COST) return { valid: false, reason: 'Not enough money' }
     if (player.linkTilesRemaining <= 0) return { valid: false, reason: 'No link tiles remaining' }
@@ -49,6 +46,9 @@ function validateNetwork (state, playerId, { cardId, connectionIds }) {
   if (player.linkTilesRemaining < connectionIds.length) {
     return { valid: false, reason: 'Not enough link tiles' }
   }
+
+  const touchRail = validateNewLinksTouchPlayerNetwork(state, playerId, connectionIds)
+  if (!touchRail.ok) return { valid: false, reason: touchRail.reason }
 
   const cost = connectionIds.length === 1 ? SINGLE_RAIL_COST : DOUBLE_RAIL_COST
   const coalNeeded = connectionIds.length

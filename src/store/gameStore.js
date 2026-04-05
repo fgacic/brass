@@ -9,6 +9,8 @@ export const useGameStore = create((set, get) => ({
   targetingMode: null,
   selectedTargets: [],
   buildIndustry: null,
+  developIndustries: [],
+  sellTiles: [],
   actionError: null,
   actionSubmitting: false,
   actionErrorTick: 0,
@@ -19,10 +21,16 @@ export const useGameStore = create((set, get) => ({
 
   setBuildIndustry: (buildIndustry) => set({ buildIndustry }),
 
+  setDevelopIndustries: (developIndustries) => set({ developIndustries }),
+
+  setSellTiles: (sellTiles) => set({ sellTiles }),
+
   setSelectedAction: (action) => set({
     selectedAction: action,
     selectedTargets: [],
     buildIndustry: null,
+    developIndustries: [],
+    sellTiles: [],
     actionError: null,
   }),
 
@@ -41,6 +49,13 @@ export const useGameStore = create((set, get) => ({
     return { selectedTargets: [...s.selectedTargets, target] }
   }),
 
+  setLocationTarget: (locationId) => set((s) => ({
+    selectedTargets: [
+      { type: 'location', id: locationId },
+      ...s.selectedTargets.filter(t => t.type !== 'location'),
+    ],
+  })),
+
   removeTarget: (targetId) => set((s) => ({
     selectedTargets: s.selectedTargets.filter(t => t.id !== targetId),
   })),
@@ -58,6 +73,8 @@ export const useGameStore = create((set, get) => ({
     targetingMode: null,
     selectedTargets: [],
     buildIndustry: null,
+    developIndustries: [],
+    sellTiles: [],
     actionError: null,
     actionSubmitting: false,
   }),
@@ -67,6 +84,8 @@ export const useGameStore = create((set, get) => ({
     targetingMode: null,
     selectedTargets: [],
     buildIndustry: null,
+    developIndustries: [],
+    sellTiles: [],
     actionError: null,
     actionSubmitting: false,
   })),
