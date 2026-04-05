@@ -52,7 +52,7 @@ export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan })
 
   return (
     <m.div
-      className={`flex items-center justify-between gap-4 border-b px-4 py-2.5 shadow-sm ${
+      className={`flex min-h-0 items-center justify-between gap-3 border-b px-3 py-2.5 shadow-sm sm:gap-4 sm:px-4 sm:py-3 ${
         isMyTurn
           ? 'border-amber-600/35 bg-gradient-to-r from-amber-950/55 via-amber-900/20 to-transparent shadow-amber-950/20'
           : 'border-amber-900/20 bg-gradient-to-r from-[#1a1510] to-[#14100d]'
@@ -69,27 +69,27 @@ export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan })
       }
       transition={{ duration: 0.9, ease: 'easeOut' }}
     >
-      <div className="flex min-w-0 flex-1 items-center gap-4">
-        <span className="shrink-0 text-sm font-medium text-amber-100/55">
-          {gameState.era === 'canal' ? 'Canal era' : 'Rail era'} <span className="text-amber-900/60">·</span> Turn {gameState.round}
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 sm:gap-x-3">
+        <span className="shrink-0 text-xs font-medium text-amber-100/55 sm:text-sm">
+          {gameState.era === 'canal' ? 'Canal' : 'Rail'} <span className="text-amber-900/60">·</span> T{gameState.round}
         </span>
-        <span className={`truncate text-sm font-semibold ${isMyTurn ? 'text-amber-300' : 'text-[#ddd6cc]'}`}>
+        <span className={`min-w-0 truncate text-xs font-semibold sm:text-sm ${isMyTurn ? 'text-amber-300' : 'text-[#ddd6cc]'}`}>
           {isMyTurn ? 'Your turn' : `${currentPlayer?.name}'s turn`}
         </span>
         {isMyTurn && myPlayer && (
-          <span className="shrink-0 rounded-md border border-amber-800/40 bg-black/20 px-2 py-0.5 text-xs text-amber-100/70">
-            {myPlayer.actionsRemaining} action{myPlayer.actionsRemaining !== 1 ? 's' : ''} left
+          <span className="shrink-0 rounded border border-amber-800/40 bg-black/20 px-1.5 py-px text-[10px] text-amber-100/70 sm:px-2 sm:text-xs">
+            {myPlayer.actionsRemaining} left
           </span>
         )}
       </div>
 
-      <div className="flex shrink-0 flex-col items-end gap-2">
-        <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-amber-200/55">
-          Turn order
+      <div className="flex min-w-0 max-w-full items-center justify-end">
+        <span className="mr-1.5 hidden shrink-0 text-[8px] font-bold uppercase tracking-wider text-amber-200/45 md:inline">
+          Order
         </span>
         <div
           ref={rowRef}
-          className="relative flex flex-wrap items-center justify-end gap-x-3 gap-y-3 overflow-visible"
+          className="relative flex min-w-0 flex-nowrap items-center justify-end gap-x-1 overflow-x-auto overflow-y-visible py-1.5 pl-0.5 pr-1 [scrollbar-width:thin] sm:gap-x-2 sm:py-2 sm:pl-1 sm:pr-1.5"
         >
           {box && (
             <m.div
@@ -122,60 +122,59 @@ export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan })
             const column = (
               <div
                 key={p.id}
-                className="relative z-2 flex w-[4.75rem] flex-col items-center gap-1"
+                className="relative z-2 flex shrink-0 items-center gap-1 py-0.5 sm:gap-1.5"
               >
-                <span
-                  className={`flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[10px] font-bold tabular-nums ${
-                    isCurrent
-                      ? 'bg-amber-500/90 text-stone-950 shadow-md shadow-amber-900/40'
-                      : 'bg-stone-800/90 text-amber-100/65 ring-1 ring-stone-600/60'
-                  }`}
-                  title={`Order ${orderIndex + 1}`}
-                >
-                  {orderIndex + 1}
-                </span>
-                <div className="relative flex flex-col items-center pb-4">
+                <div className="relative shrink-0">
+                  <span
+                    className={`absolute -top-1 -left-0.5 z-10 flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full px-0.5 text-[8px] font-bold tabular-nums shadow-sm sm:-top-1 sm:h-4 sm:text-[9px] ${
+                      isCurrent
+                        ? 'bg-amber-500/95 text-stone-950 ring-1 ring-amber-300/60'
+                        : 'bg-stone-800/95 text-amber-100/75 ring-1 ring-stone-600/70'
+                    }`}
+                    title={`Order ${orderIndex + 1}`}
+                  >
+                    {orderIndex + 1}
+                  </span>
                   <div
                     ref={(el) => {
                       if (el) slotRefs.current[p.id] = el
                       else delete slotRefs.current[p.id]
                     }}
-                    className="rounded-full p-0.5 ring-1 ring-stone-600/75 ring-offset-1 ring-offset-[#14100d]"
+                    className="rounded-full p-px ring-1 ring-stone-600/75 ring-offset-1 ring-offset-[#14100d] sm:p-0.5"
                   >
                     <div
-                      className="h-11 w-11 shrink-0 rounded-full border-2 border-black/45 shadow-inner shadow-black/30"
+                      className="h-7 w-7 shrink-0 rounded-full border-2 border-black/45 shadow-inner shadow-black/30 sm:h-8 sm:w-8"
                       style={{ backgroundColor: hex }}
                       title={`${p.name} (${p.color})`}
                     />
                   </div>
-                  {isCurrent && (
-                    <span className="absolute bottom-0 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-amber-500 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide text-stone-950 shadow-md shadow-amber-950/50">
-                      Now
-                    </span>
-                  )}
                 </div>
-                <span className="max-w-full truncate text-center text-[10px] font-medium leading-tight text-[#ebe4d9]">
-                  {p.name}
-                </span>
-                {isYou && (
-                  <span className="text-[8px] font-bold uppercase text-amber-400/95">You</span>
-                )}
-                <div className="flex flex-col items-center gap-px text-[9px] leading-tight tabular-nums">
-                  <span className="font-semibold text-amber-400/90">{p.vpMarker} VP</span>
-                  <m.span
-                    className="font-semibold text-emerald-400/95"
-                    animate={
-                      isYou && moneyPulseLoan && !reduceMotion
-                        ? {
-                          scale: [1, 1.12, 1],
-                          color: ['rgb(52, 211, 153)', 'rgb(167, 243, 208)', 'rgb(52, 211, 153)'],
-                        }
-                        : { scale: 1 }
-                    }
-                    transition={{ duration: 0.75, ease: 'easeOut' }}
-                  >
-                    £{p.money}
-                  </m.span>
+                <div className="min-w-0 max-w-[3.25rem] leading-tight sm:max-w-[4.75rem]">
+                  <div className="flex items-center gap-0.5">
+                    <span className="truncate text-[10px] font-semibold text-[#ebe4d9] sm:text-[11px]">
+                      {p.name}
+                    </span>
+                    {isYou && (
+                      <span className="shrink-0 text-[7px] font-bold uppercase text-amber-400/90">You</span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-baseline gap-x-1 text-[8px] tabular-nums sm:text-[9px]">
+                    <span className="font-semibold whitespace-nowrap text-amber-400/90">{p.vpMarker} VP</span>
+                    <m.span
+                      className="font-semibold whitespace-nowrap text-emerald-400/95"
+                      animate={
+                        isYou && moneyPulseLoan && !reduceMotion
+                          ? {
+                            scale: [1, 1.12, 1],
+                            color: ['rgb(52, 211, 153)', 'rgb(167, 243, 208)', 'rgb(52, 211, 153)'],
+                          }
+                          : { scale: 1 }
+                      }
+                      transition={{ duration: 0.75, ease: 'easeOut' }}
+                    >
+                      £{p.money}
+                    </m.span>
+                  </div>
                 </div>
               </div>
             )
@@ -186,10 +185,10 @@ export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan })
               column,
               <div
                 key={`arrow-${p.id}-to-${nextId}`}
-                className="relative z-2 flex shrink-0 items-center text-amber-400/60"
+                className="relative z-2 flex shrink-0 items-center self-center text-amber-400/55"
                 aria-hidden
               >
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" />
                 </svg>
               </div>

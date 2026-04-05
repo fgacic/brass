@@ -8,7 +8,7 @@ Online multiplayer implementation of the board game Brass: Birmingham for 2-4 pl
 - **Socket.IO** - Real-time multiplayer communication
 - **Zustand** - Client-side state management
 - **Tailwind CSS** - Styling (warm brass / industrial palette; **DM Sans** body + **Lora** display via `next/font` in `layout.js`)
-- **Motion** (`motion` package) - Game UI transitions (hand list, board tiles/links, mat rows, turn bar, money pulse, action error shake). Wrapped in `LazyMotion` + `domMax` (layout + gestures + animations) via `src/components/game/motionConfig.js`; heavy sequences respect `useReducedMotion()`.
+- **Motion** (`motion` package) - Game UI transitions (hand list, board tiles/links, mat rows, turn bar, money pulse, action error shake). Wrapped in `LazyMotion` + `domMax` (layout + gestures + animations) via `src/components/game/motionConfig.js`; heavy sequences respect `useReducedMotion()`. The top **turn bar** (`TurnInfo.js`) uses a shallow layout: small avatars with order badges, names and VP/£ on one column beside each avatar, horizontal scroll on narrow viewports.
 - **Howler** (`howler`) - Chime when it becomes your turn (`useMyTurnSound`, driven by `useGameStateFx`’s `myTurnFlash`); wind-up sting when the **Turn** counter advances (`gameState.round`, `RoundAdvanceOverlay` + `useRoundAdvanceOverlay`, `public/sounds/round-windup.wav`, `node scripts/generate-round-windup.cjs`). Turn clip: `public/sounds/your-turn.wav` (`node scripts/generate-turn-chime.cjs`). Playback skips under `prefers-reduced-motion: reduce`. If audio is still locked, the first successful play may follow a `pointerdown` on the page.
 
 ## Architecture
