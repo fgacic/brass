@@ -788,7 +788,7 @@ export function Board({ gameState, playerId, boardFx = null }) {
   );
 
   return (
-    <div className="relative w-full h-full overflow-visible">
+    <div className="relative h-full w-full overflow-visible">
       <svg
         ref={svgRef}
         viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}

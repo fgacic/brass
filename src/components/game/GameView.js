@@ -59,60 +59,62 @@ export function GameView ({ playerId }) {
         </div>
       ) : null}
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="relative flex-1 overflow-hidden shadow-[inset_0_0_80px_rgba(0,0,0,0.35)]">
-          <Board gameState={gameState} playerId={playerId} boardFx={boardFx} />
-        </div>
-
-        <div className="flex w-80 flex-col border-l border-amber-900/25 bg-gradient-to-b from-[#1f1813]/95 to-[#14100d]/98 shadow-[-12px_0_40px_rgba(0,0,0,0.35)] backdrop-blur-md">
-          <div className="flex-1 space-y-4 overflow-auto p-4">
-            <MarketTrack
-              coalMarket={gameState.coalMarket}
-              ironMarket={gameState.ironMarket}
-            />
-            <PlayerMat
-              player={myPlayer}
-              matFlashIndustry={boardFx.matFlashIndustry}
-              moneyPulseLoan={boardFx.moneyPulseLoan}
-            />
-            <BoardResourceSummary gameState={gameState} />
-            <GameLog log={gameState.log} players={gameState.players} />
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 flex-1 overflow-hidden">
+          <div className="relative flex-1 overflow-hidden shadow-[inset_0_0_80px_rgba(0,0,0,0.35)]">
+            <Board gameState={gameState} playerId={playerId} boardFx={boardFx} />
           </div>
-        </div>
-      </div>
 
-      <m.div
-        layout
-        initial={false}
-        transition={
-          reduceMotion
-            ? { duration: 0 }
-            : {
-                layout: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
-              }
-        }
-        className="border-t border-amber-900/30 bg-gradient-to-r from-[#1c1611] via-[#221a14] to-[#1c1611] shadow-[0_-12px_40px_rgba(0,0,0,0.4)] ring-1 ring-black/20"
-      >
-        {isMyTurn ? (
-          <div className="flex min-h-[6.25rem] max-h-[min(42vh,320px)] items-stretch">
-            <ActionPanel
-              embedded
-              gameState={gameState}
-              playerId={playerId}
-            />
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center border-l border-amber-900/25 bg-[#0a0806]/40">
-              <Hand
-                embedded
-                cards={myPlayer?.hand || []}
-                player={myPlayer}
-                handFlash={boardFx.handFlash}
+          <div className="flex w-80 flex-col border-l border-amber-900/25 bg-gradient-to-b from-[#1f1813]/95 to-[#14100d]/98 shadow-[-12px_0_40px_rgba(0,0,0,0.35)] backdrop-blur-md">
+            <div className="flex-1 space-y-4 overflow-auto p-4 pb-[min(42vh,320px)]">
+              <MarketTrack
+                coalMarket={gameState.coalMarket}
+                ironMarket={gameState.ironMarket}
               />
+              <PlayerMat
+                player={myPlayer}
+                matFlashIndustry={boardFx.matFlashIndustry}
+                moneyPulseLoan={boardFx.moneyPulseLoan}
+              />
+              <BoardResourceSummary gameState={gameState} />
+              <GameLog log={gameState.log} players={gameState.players} />
             </div>
           </div>
-        ) : (
-          <Hand cards={myPlayer?.hand || []} player={myPlayer} handFlash={boardFx.handFlash} />
-        )}
-      </m.div>
+        </div>
+
+        <m.div
+          layout
+          initial={false}
+          transition={
+            reduceMotion
+              ? { duration: 0 }
+              : {
+                  layout: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+                }
+          }
+          className="pointer-events-auto absolute inset-x-0 bottom-0 z-30 border-t border-amber-900/30 bg-gradient-to-r from-[#1c1611] via-[#221a14] to-[#1c1611] shadow-[0_-12px_40px_rgba(0,0,0,0.4)] ring-1 ring-black/20"
+        >
+          {isMyTurn ? (
+            <div className="flex min-h-[6.25rem] max-h-[min(42vh,320px)] items-stretch">
+              <ActionPanel
+                embedded
+                gameState={gameState}
+                playerId={playerId}
+              />
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center border-l border-amber-900/25 bg-[#0a0806]/40">
+                <Hand
+                  embedded
+                  cards={myPlayer?.hand || []}
+                  player={myPlayer}
+                  handFlash={boardFx.handFlash}
+                />
+              </div>
+            </div>
+          ) : (
+            <Hand cards={myPlayer?.hand || []} player={myPlayer} handFlash={boardFx.handFlash} />
+          )}
+        </m.div>
+      </div>
       <RoundAdvanceOverlay round={overlayRound} />
     </div>
     </GameMotionRoot>
