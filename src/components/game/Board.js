@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useLayoutEffect } from "react";
 import { useGameStore } from "@/store/gameStore";
 import { LOCATION_POSITIONS } from "@/game/data/board-location-positions";
 import {
@@ -81,6 +81,18 @@ function formatBuildCostResourceSuffix(row) {
 }
 
 const DEFAULT_VB = { x: -20, y: -20, w: 660, h: 720 };
+const MAP_BG_PAD = 500;
+
+function applyPointerPanToDom(svgEl, bgRectEl, v) {
+  if (!svgEl) return;
+  svgEl.setAttribute("viewBox", `${v.x} ${v.y} ${v.w} ${v.h}`);
+  if (bgRectEl) {
+    bgRectEl.setAttribute("x", String(v.x - MAP_BG_PAD));
+    bgRectEl.setAttribute("y", String(v.y - MAP_BG_PAD));
+    bgRectEl.setAttribute("width", String(v.w + MAP_BG_PAD * 2));
+    bgRectEl.setAttribute("height", String(v.h + MAP_BG_PAD * 2));
+  }
+}
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 4;
 const DRAG_THRESHOLD = 4;
@@ -473,7 +485,42 @@ export function Board({ gameState, playerId, boardFx = null }) {
   } = useGameStore();
   const reduceMotion = useReducedMotion();
   const svgRef = useRef(null);
+  const mapBgRectRef = useRef(null);
   const [vb, setVb] = useState({ ...DEFAULT_VB });
+  const vbRef = useRef(vb);
+  const pendingVbRef = useRef(null);
+  const vbRafRef = useRef(null);
+  useLayoutEffect(() => {
+    vbRef.current = vb;
+  }, [vb]);
+
+  const flushVb = useCallback(() => {
+    if (vbRafRef.current !== null) {
+      cancelAnimationFrame(vbRafRef.current);
+      vbRafRef.current = null;
+    }
+    const pending = pendingVbRef.current;
+    pendingVbRef.current = null;
+    if (pending) {
+      vbRef.current = pending;
+      setVb(pending);
+    }
+  }, []);
+
+  const scheduleVb = useCallback((nextVb) => {
+    pendingVbRef.current = nextVb;
+    if (vbRafRef.current !== null) return;
+    vbRafRef.current = requestAnimationFrame(() => {
+      vbRafRef.current = null;
+      const applied = pendingVbRef.current;
+      pendingVbRef.current = null;
+      if (applied) {
+        vbRef.current = applied;
+        setVb(applied);
+      }
+    });
+  }, []);
+
   const panRef = useRef({
     active: false,
     hasDragged: false,
@@ -510,12 +557,6 @@ export function Board({ gameState, playerId, boardFx = null }) {
     (e, locationId) => {
       if (panRef.current.hasDragged) return;
       e.stopPropagation();
-      console.log(
-        "[Board] Location clicked:",
-        locationId,
-        "targetingMode:",
-        targetingMode
-      );
       if (targetingMode === "location") {
         addTarget({ type: "location", id: locationId });
       }
@@ -527,12 +568,6 @@ export function Board({ gameState, playerId, boardFx = null }) {
     (e, connId) => {
       if (panRef.current.hasDragged) return;
       e.stopPropagation();
-      console.log(
-        "[Board] Connection clicked:",
-        connId,
-        "targetingMode:",
-        targetingMode
-      );
       if (targetingMode === "connection") {
         addTarget({ type: "connection", id: connId });
       }
@@ -540,17 +575,15 @@ export function Board({ gameState, playerId, boardFx = null }) {
     [targetingMode, addTarget]
   );
 
-  const screenToSvg = useCallback(
-    (clientX, clientY) => {
-      const svg = svgRef.current;
-      if (!svg) return { x: 0, y: 0 };
-      const rect = svg.getBoundingClientRect();
-      const sx = (clientX - rect.left) / rect.width;
-      const sy = (clientY - rect.top) / rect.height;
-      return { x: vb.x + sx * vb.w, y: vb.y + sy * vb.h };
-    },
-    [vb]
-  );
+  const screenToSvg = useCallback((clientX, clientY) => {
+    const svg = svgRef.current;
+    if (!svg) return { x: 0, y: 0 };
+    const rect = svg.getBoundingClientRect();
+    const sx = (clientX - rect.left) / rect.width;
+    const sy = (clientY - rect.top) / rect.height;
+    const v = vbRef.current;
+    return { x: v.x + sx * v.w, y: v.y + sy * v.h };
+  }, []);
 
   const handleWheel = useCallback(
     (e) => {
@@ -564,88 +597,101 @@ export function Board({ gameState, playerId, boardFx = null }) {
         WHEEL_ZOOM_PER_EVENT_MAX
       );
       const svgPt = screenToSvg(e.clientX, e.clientY);
-
-      setVb((prev) => {
-        const newW = prev.w * zoomFactor;
-        const newH = prev.h * zoomFactor;
-        const scaleW = newW / DEFAULT_VB.w;
-        if (scaleW < MIN_ZOOM || scaleW > MAX_ZOOM) return prev;
-        return {
-          x: svgPt.x - (svgPt.x - prev.x) * zoomFactor,
-          y: svgPt.y - (svgPt.y - prev.y) * zoomFactor,
-          w: newW,
-          h: newH,
-        };
+      const prev = pendingVbRef.current ?? vbRef.current;
+      const newW = prev.w * zoomFactor;
+      const newH = prev.h * zoomFactor;
+      const scaleW = newW / DEFAULT_VB.w;
+      if (scaleW < MIN_ZOOM || scaleW > MAX_ZOOM) return;
+      scheduleVb({
+        x: svgPt.x - (svgPt.x - prev.x) * zoomFactor,
+        y: svgPt.y - (svgPt.y - prev.y) * zoomFactor,
+        w: newW,
+        h: newH,
       });
     },
-    [screenToSvg]
+    [screenToSvg, scheduleVb]
   );
 
   const handleMouseDown = useCallback(
     (e) => {
       if (e.button !== 0) return;
+      flushVb();
       panRef.current = {
         active: true,
         hasDragged: false,
         startX: e.clientX,
         startY: e.clientY,
-        startVb: { ...vb },
+        startVb: { ...vbRef.current },
       };
     },
-    [vb]
+    [flushVb]
   );
 
-  const handleMouseMove = useCallback((e) => {
-    const pan = panRef.current;
-    if (!pan.active) return;
+  const handleMouseMove = useCallback(
+    (e) => {
+      const pan = panRef.current;
+      if (!pan.active) return;
 
-    const dx = e.clientX - pan.startX;
-    const dy = e.clientY - pan.startY;
+      const dx = e.clientX - pan.startX;
+      const dy = e.clientY - pan.startY;
 
-    if (
-      !pan.hasDragged &&
-      Math.abs(dx) < DRAG_THRESHOLD &&
-      Math.abs(dy) < DRAG_THRESHOLD
-    )
-      return;
-    pan.hasDragged = true;
+      if (
+        !pan.hasDragged &&
+        Math.abs(dx) < DRAG_THRESHOLD &&
+        Math.abs(dy) < DRAG_THRESHOLD
+      )
+        return;
+      pan.hasDragged = true;
 
-    const svg = svgRef.current;
-    if (!svg) return;
-    const rect = svg.getBoundingClientRect();
-    const svgDx = (dx / rect.width) * pan.startVb.w;
-    const svgDy = (dy / rect.height) * pan.startVb.h;
-    setVb({
-      x: pan.startVb.x - svgDx,
-      y: pan.startVb.y - svgDy,
-      w: pan.startVb.w,
-      h: pan.startVb.h,
-    });
-  }, []);
+      const svg = svgRef.current;
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const svgDx = (dx / rect.width) * pan.startVb.w;
+      const svgDy = (dy / rect.height) * pan.startVb.h;
+      const nextVb = {
+        x: pan.startVb.x - svgDx,
+        y: pan.startVb.y - svgDy,
+        w: pan.startVb.w,
+        h: pan.startVb.h,
+      };
+      vbRef.current = nextVb;
+      applyPointerPanToDom(svg, mapBgRectRef.current, nextVb);
+    },
+    []
+  );
 
   const handleMouseUp = useCallback(() => {
+    const hadPointerPan = panRef.current.hasDragged;
+    flushVb();
+    if (hadPointerPan) {
+      const next = { ...vbRef.current };
+      vbRef.current = next;
+      setVb(next);
+    }
     setTimeout(() => {
       panRef.current.active = false;
     }, 0);
-  }, []);
+  }, [flushVb]);
 
   const handleTouchStart = useCallback(
     (e) => {
       if (e.touches.length === 2) {
+        flushVb();
         const dx = e.touches[0].clientX - e.touches[1].clientX;
         const dy = e.touches[0].clientY - e.touches[1].clientY;
         pinchRef.current = { dist: Math.sqrt(dx * dx + dy * dy) };
       } else if (e.touches.length === 1) {
+        flushVb();
         panRef.current = {
           active: true,
           hasDragged: false,
           startX: e.touches[0].clientX,
           startY: e.touches[0].clientY,
-          startVb: { ...vb },
+          startVb: { ...vbRef.current },
         };
       }
     },
-    [vb]
+    [flushVb]
   );
 
   const handleTouchMove = useCallback(
@@ -659,19 +705,18 @@ export function Board({ gameState, playerId, boardFx = null }) {
         const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
         const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
         const svgPt = screenToSvg(midX, midY);
-
-        setVb((prev) => {
-          const newW = prev.w * scale;
-          const newH = prev.h * scale;
-          const scaleW = newW / DEFAULT_VB.w;
-          if (scaleW < MIN_ZOOM || scaleW > MAX_ZOOM) return prev;
-          return {
+        const prev = pendingVbRef.current ?? vbRef.current;
+        const newW = prev.w * scale;
+        const newH = prev.h * scale;
+        const scaleW = newW / DEFAULT_VB.w;
+        if (scaleW >= MIN_ZOOM && scaleW <= MAX_ZOOM) {
+          scheduleVb({
             x: svgPt.x - (svgPt.x - prev.x) * scale,
             y: svgPt.y - (svgPt.y - prev.y) * scale,
             w: newW,
             h: newH,
-          };
-        });
+          });
+        }
         pinchRef.current.dist = newDist;
       } else if (e.touches.length === 1 && panRef.current.active) {
         const pan = panRef.current;
@@ -690,22 +735,31 @@ export function Board({ gameState, playerId, boardFx = null }) {
         const rect = svg.getBoundingClientRect();
         const svgDx = (dx / rect.width) * pan.startVb.w;
         const svgDy = (dy / rect.height) * pan.startVb.h;
-        setVb({
+        const nextVb = {
           x: pan.startVb.x - svgDx,
           y: pan.startVb.y - svgDy,
           w: pan.startVb.w,
           h: pan.startVb.h,
-        });
+        };
+        vbRef.current = nextVb;
+        applyPointerPanToDom(svg, mapBgRectRef.current, nextVb);
       }
     },
-    [screenToSvg]
+    [screenToSvg, scheduleVb]
   );
 
   const handleTouchEnd = useCallback(() => {
+    const hadPointerPan = panRef.current.hasDragged;
+    flushVb();
+    if (hadPointerPan) {
+      const next = { ...vbRef.current };
+      vbRef.current = next;
+      setVb(next);
+    }
     setTimeout(() => {
       panRef.current.active = false;
     }, 0);
-  }, []);
+  }, [flushVb]);
 
   useEffect(() => {
     const svg = svgRef.current;
@@ -715,7 +769,19 @@ export function Board({ gameState, playerId, boardFx = null }) {
     return () => svg.removeEventListener("wheel", prevent);
   }, []);
 
-  const resetView = useCallback(() => setVb({ ...DEFAULT_VB }), []);
+  const resetView = useCallback(() => {
+    if (vbRafRef.current !== null) {
+      cancelAnimationFrame(vbRafRef.current);
+      vbRafRef.current = null;
+    }
+    pendingVbRef.current = null;
+    const next = { ...DEFAULT_VB };
+    vbRef.current = next;
+    panRef.current.active = false;
+    panRef.current.hasDragged = false;
+    applyPointerPanToDom(svgRef.current, mapBgRectRef.current, next);
+    setVb(next);
+  }, []);
 
   useEffect(() => {
     if (selectedAction !== "build" || targetingMode !== "location") return;
@@ -727,6 +793,8 @@ export function Board({ gameState, playerId, boardFx = null }) {
       return;
     const pos = LOCATION_POSITIONS[selectedCardObj.locationId];
     if (!pos) return;
+
+    flushVb();
 
     setLocationTarget(selectedCardObj.locationId);
 
@@ -777,6 +845,7 @@ export function Board({ gameState, playerId, boardFx = null }) {
     selectedCardObj?.type,
     setLocationTarget,
     reduceMotion,
+    flushVb,
   ]);
 
   const drawnPairs = new Set();
@@ -829,11 +898,15 @@ export function Board({ gameState, playerId, boardFx = null }) {
     [heldLegendId, reduceMotion]
   );
 
+  const pointerPanningLive =
+    panRef.current.active && panRef.current.hasDragged;
+  const displayVb = pointerPanningLive ? vbRef.current : vb;
+
   return (
     <div className="relative h-full w-full overflow-visible">
       <svg
         ref={svgRef}
-        viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
+        viewBox={`${displayVb.x} ${displayVb.y} ${displayVb.w} ${displayVb.h}`}
         className="w-full h-full"
         style={{
           touchAction: "none",
@@ -849,10 +922,11 @@ export function Board({ gameState, playerId, boardFx = null }) {
         onTouchEnd={handleTouchEnd}
       >
         <rect
-          x={vb.x - 500}
-          y={vb.y - 500}
-          width={vb.w + 1000}
-          height={vb.h + 1000}
+          ref={mapBgRectRef}
+          x={displayVb.x - MAP_BG_PAD}
+          y={displayVb.y - MAP_BG_PAD}
+          width={displayVb.w + MAP_BG_PAD * 2}
+          height={displayVb.h + MAP_BG_PAD * 2}
           fill="#1c1917"
         />
 
@@ -1693,7 +1767,8 @@ export function Board({ gameState, playerId, boardFx = null }) {
       {/* Zoom controls */}
       <div className="absolute bottom-2 right-2 flex flex-col gap-1.5">
         <button
-          onClick={() =>
+          onClick={() => {
+            flushVb();
             setVb((prev) => {
               const factor = 1 / 1.3;
               const cx = prev.x + prev.w / 2;
@@ -1702,15 +1777,16 @@ export function Board({ gameState, playerId, boardFx = null }) {
               const newH = prev.h * factor;
               if (newW / DEFAULT_VB.w < MIN_ZOOM) return prev;
               return { x: cx - newW / 2, y: cy - newH / 2, w: newW, h: newH };
-            })
-          }
+            });
+          }}
           className="flex h-9 w-9 items-center justify-center rounded-lg border border-amber-900/35 bg-gradient-to-b from-[#2a2218] to-[#14100e] text-lg leading-none text-amber-100/90 shadow-lg shadow-black/40 transition hover:from-[#352a1e] hover:to-[#1a1510] hover:text-amber-50"
           title="Zoom in"
         >
           +
         </button>
         <button
-          onClick={() =>
+          onClick={() => {
+            flushVb();
             setVb((prev) => {
               const factor = 1.3;
               const cx = prev.x + prev.w / 2;
@@ -1719,8 +1795,8 @@ export function Board({ gameState, playerId, boardFx = null }) {
               const newH = prev.h * factor;
               if (newW / DEFAULT_VB.w > MAX_ZOOM) return prev;
               return { x: cx - newW / 2, y: cy - newH / 2, w: newW, h: newH };
-            })
-          }
+            });
+          }}
           className="flex h-9 w-9 items-center justify-center rounded-lg border border-amber-900/35 bg-gradient-to-b from-[#2a2218] to-[#14100e] text-lg leading-none text-amber-100/90 shadow-lg shadow-black/40 transition hover:from-[#352a1e] hover:to-[#1a1510]"
           title="Zoom out"
         >
