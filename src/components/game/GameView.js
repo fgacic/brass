@@ -15,7 +15,7 @@ import { TurnInfo } from './TurnInfo'
 import { GameLog } from './GameLog'
 import { MarketTrack } from './MarketTrack'
 import { GameOver } from './GameOver'
-import { GameMotionRoot } from './motionConfig'
+import { GameMotionRoot, m, useReducedMotion } from './motionConfig'
 
 export function GameView ({ playerId }) {
   const { gameState } = useGameStore()
@@ -38,6 +38,7 @@ export function GameView ({ playerId }) {
 
   const myPlayer = gameState.players.find(p => p.id === playerId)
   const isMyTurn = gameState.turnOrder[gameState.currentPlayerIndex] === playerId
+  const reduceMotion = useReducedMotion()
 
   return (
     <GameMotionRoot>
@@ -80,7 +81,18 @@ export function GameView ({ playerId }) {
         </div>
       </div>
 
-      <div className="border-t border-amber-900/30 bg-gradient-to-r from-[#1c1611] via-[#221a14] to-[#1c1611] shadow-[0_-12px_40px_rgba(0,0,0,0.4)] ring-1 ring-black/20">
+      <m.div
+        layout
+        initial={false}
+        transition={
+          reduceMotion
+            ? { duration: 0 }
+            : {
+                layout: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+              }
+        }
+        className="border-t border-amber-900/30 bg-gradient-to-r from-[#1c1611] via-[#221a14] to-[#1c1611] shadow-[0_-12px_40px_rgba(0,0,0,0.4)] ring-1 ring-black/20"
+      >
         {isMyTurn ? (
           <div className="flex min-h-[6.25rem] max-h-[min(42vh,320px)] items-stretch">
             <ActionPanel
@@ -100,7 +112,7 @@ export function GameView ({ playerId }) {
         ) : (
           <Hand cards={myPlayer?.hand || []} player={myPlayer} handFlash={boardFx.handFlash} />
         )}
-      </div>
+      </m.div>
       <RoundAdvanceOverlay round={overlayRound} />
     </div>
     </GameMotionRoot>
