@@ -66,7 +66,7 @@ export function GameView ({ playerId }) {
           </div>
 
           <div className="flex w-80 flex-col border-l border-amber-900/25 bg-gradient-to-b from-[#1f1813]/95 to-[#14100d]/98 shadow-[-12px_0_40px_rgba(0,0,0,0.35)] backdrop-blur-md">
-            <div className="flex-1 space-y-4 overflow-auto p-4 pb-[min(42vh,320px)]">
+            <div className="flex-1 space-y-4 overflow-auto p-4">
               <MarketTrack
                 coalMarket={gameState.coalMarket}
                 ironMarket={gameState.ironMarket}
@@ -92,7 +92,7 @@ export function GameView ({ playerId }) {
                   layout: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
                 }
           }
-          className="pointer-events-auto absolute inset-x-0 bottom-0 z-30 border-t border-amber-900/30 bg-gradient-to-r from-[#1c1611] via-[#221a14] to-[#1c1611] shadow-[0_-12px_40px_rgba(0,0,0,0.4)] ring-1 ring-black/20"
+          className="pointer-events-auto shrink-0 border-t border-amber-900/30 bg-gradient-to-r from-[#1c1611] via-[#221a14] to-[#1c1611] shadow-[0_-8px_32px_rgba(0,0,0,0.35)] ring-1 ring-black/20"
         >
           {isMyTurn ? (
             <div className="flex min-h-[6.25rem] max-h-[min(42vh,320px)] items-stretch">
