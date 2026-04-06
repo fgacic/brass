@@ -304,16 +304,12 @@ export function ActionPanel ({ gameState, playerId, embedded = false }) {
             {selectedAction === 'build' && (
               <>
                 <span className="text-amber-900/45">|</span>
-                {buildIndustry ? (
+                {!buildIndustry ? (
                   <>
-                    <span className="text-xs text-green-400">
-                      {INDUSTRY_LABELS[buildIndustry] || buildIndustry}
-                    </span>
+                    <span className="text-xs text-yellow-500 animate-pulse">Pick industry below</span>
                     <span className="text-amber-900/45">|</span>
                   </>
-                ) : (
-                  <span className="text-xs text-yellow-500 animate-pulse">Pick industry below</span>
-                )}
+                ) : null}
                 {locationTarget ? (
                   <span className="text-xs text-green-400">
                     {formatLocName(locationTarget.id)}
