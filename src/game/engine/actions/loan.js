@@ -2,6 +2,7 @@ const { LOAN_AMOUNT, MIN_INCOME_LEVEL } = require('../../constants')
 const { deepClone, getPlayerById } = require('../state')
 const { retreatIncomeLevels, getIncomeAtPosition } = require('../../data/progress-track')
 const { advanceTurn } = require('../turn')
+const { logMoneyCalc } = require('../money-audit')
 
 function validateLoan (state, playerId, { cardId }) {
   const player = getPlayerById(state, playerId)
@@ -38,8 +39,16 @@ function executeLoan (state, playerId, { cardId }) {
     }
   }
 
+  const balanceBefore = player.money
   player.money += LOAN_AMOUNT
   player.incomeMarkerPosition = retreatIncomeLevels(player.incomeMarkerPosition, 3)
+
+  logMoneyCalc('loan', {
+    playerId,
+    credit: LOAN_AMOUNT,
+    balanceBefore,
+    balanceAfter: player.money,
+  })
 
   newState.log.push({
     action: 'loan',

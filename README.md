@@ -13,7 +13,7 @@ Online multiplayer implementation of the board game Brass: Birmingham for 2-4 pl
 
 ## Architecture
 
-Server-authoritative model: the server owns all game state, validates every action, and broadcasts filtered updates to each player. Clients render state and send action intents.
+Server-authoritative model: the server owns all game state, validates every action, and broadcasts filtered updates to each player. Clients render state and send action intents. **Server logs:** after each successful `game:action`, [`game-manager.js`](src/server/game-manager.js) prints `[Money]` with every player’s cash and deltas vs the pre-action snapshot (covers income when a round ends inside the same tick). Per-action spend/income detail uses `[MoneyCalc]` from [`money-audit.js`](src/game/engine/money-audit.js) in build / network / develop / loan / sell executors.
 
 **Sidebar supply:** Under the player mat, **`BoardResourceSummary`** (`BoardResourceSummary.js`) shows **iron** as one number: cubes on unflipped **iron works** on the board only (`board-resource-summary.js`; iron demand track remains in **Markets** / `MarketTrack.js`). **Coal** lists each **location** that has coal on a mine with remaining cubes, per-location counts, and **total** coal on mines only.
 

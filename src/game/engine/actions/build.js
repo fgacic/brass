@@ -5,6 +5,7 @@ const { getTileDefinition } = require('../../data/industries')
 const { isInPlayerNetwork, playerHasNoTilesOnBoard } = require('../pathfinding')
 const { consumeCoal, consumeIron, canAffordCoal, canAffordIron, moveCubesToMarket } = require('../resources')
 const { advanceTurn } = require('../turn')
+const { logMoneyCalc } = require('../money-audit')
 
 function validateBuild (state, playerId, { cardId, locationId, industry }) {
   const player = getPlayerById(state, playerId)
@@ -142,26 +143,44 @@ function executeBuild (state, playerId, { cardId, locationId, industry }) {
     ownerId: playerId,
   }
 
+  const balanceBefore = player.money
+  let coalPaid = 0
+  let ironPaid = 0
+  let cubeIncome = 0
+
   player.money -= tile.cost
   player.moneySpentThisRound += tile.cost
 
   if (tile.coalCost > 0) {
     const coalResult = consumeCoal(newState, locationId, tile.coalCost)
-    player.money -= coalResult.cost
-    player.moneySpentThisRound += coalResult.cost
+    coalPaid = coalResult.cost
+    player.money -= coalPaid
+    player.moneySpentThisRound += coalPaid
   }
 
   if (tile.ironCost > 0) {
     const ironResult = consumeIron(newState, tile.ironCost)
-    player.money -= ironResult.cost
-    player.moneySpentThisRound += ironResult.cost
+    ironPaid = ironResult.cost
+    player.money -= ironPaid
+    player.moneySpentThisRound += ironPaid
   }
 
   if (tile.resourceType === 'iron' || tile.resourceType === 'coal') {
     const placedTile = newState.industryTilesOnBoard.find(t => t.id === tile.id)
-    const moneyEarned = moveCubesToMarket(newState, placedTile)
-    player.money += moneyEarned
+    cubeIncome = moveCubesToMarket(newState, placedTile)
+    player.money += cubeIncome
   }
+
+  logMoneyCalc('build', {
+    playerId,
+    locationId,
+    industry,
+    level: tile.level,
+    paidPounds: { tile: tile.cost, coal: coalPaid, iron: ironPaid },
+    cubeIncome,
+    balanceBefore,
+    balanceAfter: player.money,
+  })
 
   newState.log.push({
     action: 'build',

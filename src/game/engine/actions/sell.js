@@ -4,6 +4,7 @@ const { areConnected } = require('../pathfinding')
 const { consumeBeer, countAvailableBeer, flipTile } = require('../resources')
 const { merchantAcceptsIndustry, getTotalMerchantBeerRemaining } = require('../../data/merchants')
 const { advanceTurn } = require('../turn')
+const { logMoneyCalc } = require('../money-audit')
 const { advanceIncomeMarker } = require('../../data/progress-track')
 
 const SELLABLE = [INDUSTRY.COTTON_MILL, INDUSTRY.MANUFACTURER, INDUSTRY.POTTERY]
@@ -64,6 +65,8 @@ function executeSell (state, playerId, { cardId, tileSells }) {
     }
   }
 
+  const balanceBefore = player.money
+
   for (const sell of tileSells) {
     const tile = newState.industryTilesOnBoard.find(t => t.id === sell.tileId)
     const merchant = newState.board.merchants[sell.merchantLocationId]
@@ -91,6 +94,14 @@ function executeSell (state, playerId, { cardId, tileSells }) {
       applyMerchantBonus(newState, player, sell.merchantLocationId)
     }
   }
+
+  logMoneyCalc('sell', {
+    playerId,
+    tilesSold: tileSells.length,
+    moneyDelta: player.money - balanceBefore,
+    balanceBefore,
+    balanceAfter: player.money,
+  })
 
   newState.log.push({
     action: 'sell',

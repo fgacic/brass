@@ -1,6 +1,7 @@
 const { deepClone, getPlayerById } = require('../state')
 const { consumeIron, canAffordIron } = require('../resources')
 const { advanceTurn } = require('../turn')
+const { logMoneyCalc } = require('../money-audit')
 
 function validateDevelop (state, playerId, { cardId, industries }) {
   const player = getPlayerById(state, playerId)
@@ -52,9 +53,19 @@ function executeDevelop (state, playerId, { cardId, industries }) {
     player.playerMat[industry].shift()
   }
 
+  const balanceBefore = player.money
   const ironResult = consumeIron(newState, industries.length)
   player.money -= ironResult.cost
   player.moneySpentThisRound += ironResult.cost
+
+  logMoneyCalc('develop', {
+    playerId,
+    industries,
+    ironCubesConsumed: industries.length,
+    ironSpend: ironResult.cost,
+    balanceBefore,
+    balanceAfter: player.money,
+  })
 
   newState.log.push({
     action: 'develop',

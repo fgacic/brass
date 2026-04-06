@@ -4,6 +4,7 @@ const { connections } = require('../../data/board-connections')
 const { validateNewLinksTouchPlayerNetwork } = require('../pathfinding')
 const { consumeCoal, consumeBeer, canAffordCoal, countAvailableBeer } = require('../resources')
 const { advanceTurn } = require('../turn')
+const { logMoneyCalc } = require('../money-audit')
 
 function validateNetwork (state, playerId, { cardId, connectionIds }) {
   const player = getPlayerById(state, playerId)
@@ -88,6 +89,8 @@ function executeNetwork (state, playerId, { cardId, connectionIds }) {
   }
 
   const linkType = newState.era === ERA.CANAL ? 'canal' : 'rail'
+  const balanceBefore = player.money
+  let railCoalPaid = 0
 
   for (const connId of connectionIds) {
     newState.board.links[connId] = { ownerId: playerId, type: linkType }
@@ -96,6 +99,7 @@ function executeNetwork (state, playerId, { cardId, connectionIds }) {
     if (newState.era === ERA.RAIL) {
       const conn = connections.find(c => c.id === connId)
       const coalResult = consumeCoal(newState, conn.to, 1)
+      railCoalPaid += coalResult.cost
       player.money -= coalResult.cost
       player.moneySpentThisRound += coalResult.cost
     }
@@ -103,6 +107,16 @@ function executeNetwork (state, playerId, { cardId, connectionIds }) {
 
   player.money -= validation.cost
   player.moneySpentThisRound += validation.cost
+
+  logMoneyCalc('network', {
+    playerId,
+    era: linkType,
+    connectionCount: connectionIds.length,
+    linkFee: validation.cost,
+    railCoalPaid,
+    balanceBefore,
+    balanceAfter: player.money,
+  })
 
   if (validation.beerCost > 0) {
     const lastConn = connections.find(c => c.id === connectionIds[connectionIds.length - 1])

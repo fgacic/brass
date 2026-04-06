@@ -1,7 +1,12 @@
-const { createInitialState, getCurrentPlayer } = require('../game/engine/state')
+const { createInitialState } = require('../game/engine/state')
 const { processAction } = require('../game/engine/actions')
 const { processEndOfEra } = require('../game/engine/scoring')
 const { PHASE } = require('../game/constants')
+const {
+  snapshotPlayerMoney,
+  logMoneyAfterAction,
+  logMoneyStatus,
+} = require('../game/engine/money-audit')
 const { getRoom } = require('./rooms')
 
 function startGame (roomCode) {
@@ -14,6 +19,8 @@ function startGame (roomCode) {
   room.gameState = gameState
   room.status = 'playing'
 
+  logMoneyStatus({ roomId: roomCode, label: 'event=startGame', gameState })
+
   return { gameState }
 }
 
@@ -24,6 +31,8 @@ function handleAction (roomCode, playerId, actionType, payload) {
   if (room.gameState.phase === PHASE.GAME_OVER) return { error: 'Game is over' }
 
   console.log(`[Action] ${playerId} -> ${actionType}`, JSON.stringify(payload))
+
+  const beforeMoney = snapshotPlayerMoney(room.gameState)
 
   const result = processAction(room.gameState, playerId, actionType, payload)
 
@@ -39,6 +48,15 @@ function handleAction (roomCode, playerId, actionType, payload) {
   }
 
   room.gameState = newState
+
+  logMoneyAfterAction({
+    roomId: roomCode,
+    actionType,
+    actorId: playerId,
+    beforeMoney,
+    afterState: newState,
+  })
+
   return { gameState: newState }
 }
 
