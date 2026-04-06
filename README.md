@@ -80,7 +80,7 @@ During an active game, if the socket disconnects, the in-game UI shows a short *
 
 ## Game Data
 
-All game data (locations, connections, industry tiles, cards, markets, merchants) is defined in `src/game/data/`. The game engine in `src/game/engine/` operates purely on this data with no side effects.
+All game data (locations, connections, industry tiles, cards, markets, merchants) is defined in `src/game/data/`. The game engine in `src/game/engine/` operates purely on this data with no side effects. **Stone–Burton-on-Trent** is a **canal and rail** connection (`stone-burtonOnTrent` in `board-connections.js`; keep `CONNECTION_META` in `Board.js` in sync).
 
 `board-location-positions.js` holds SVG `x`/`y` coordinates for each location on the client board map; ids must match `locations.js`. Merchant demand is drawn as orbit icons: single-industry discs or a triple C/M/P pie; **one gold beer dot sits under each strip’s icon** (filled while that strip still has merchant beer, hollow after use), matching one beer per strip (`Board.js` `renderMerchantDemandBadges`).
 

@@ -20,6 +20,7 @@ const connections = [
   // Stone
   { id: 'stone-uttoxeter', from: 'stone', to: 'uttoxeter', canalRoute: false, railRoute: true },
   { id: 'stone-stafford', from: 'stone', to: 'stafford', canalRoute: true, railRoute: true },
+  { id: 'stone-burtonOnTrent', from: 'stone', to: 'burtonOnTrent', canalRoute: true, railRoute: true },
 
   // Uttoxeter
   { id: 'uttoxeter-derby', from: 'uttoxeter', to: 'derby', canalRoute: false, railRoute: true },

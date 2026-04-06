@@ -23,6 +23,7 @@ const CONNECTION_META = {
   "leek-belper": { canal: false, rail: true },
   "stone-uttoxeter": { canal: false, rail: true },
   "stone-stafford": { canal: true, rail: true },
+  "stone-burtonOnTrent": { canal: true, rail: true },
   "uttoxeter-derby": { canal: false, rail: true },
   "derby-belper": { canal: true, rail: true },
   "derby-nottingham": { canal: true, rail: true },
