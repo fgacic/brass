@@ -365,15 +365,19 @@ function renderSlotGridEmptyCell({
     );
   }
   const [ind0, ind1] = industries;
-  const mid = x + size / 2;
+  const pad = 2;
+  const ix = x + pad;
+  const iy = y + pad;
+  const innerSize = size - 2 * pad;
+  const imx = ix + innerSize / 2;
   const pairLeft = pairingIndustry && pairingIndustry === ind0;
   const pairRight = pairingIndustry && pairingIndustry === ind1;
-  const dLeft = `M ${x} ${y} L ${mid} ${y} L ${mid} ${y + size} L ${x} ${
-    y + size
+  const dLeft = `M ${ix} ${iy} L ${imx} ${iy} L ${imx} ${iy + innerSize} L ${ix} ${
+    iy + innerSize
   } Z`;
-  const dRight = `M ${mid} ${y} L ${x + size} ${y} L ${x + size} ${
-    y + size
-  } L ${mid} ${y + size} Z`;
+  const dRight = `M ${imx} ${iy} L ${ix + innerSize} ${iy} L ${ix + innerSize} ${
+    iy + innerSize
+  } L ${imx} ${iy + innerSize} Z`;
   return (
     <g key={keyPrefix} pointerEvents="none">
       <rect
@@ -389,10 +393,10 @@ function renderSlotGridEmptyCell({
       <path d={dLeft} fill={INDUSTRY_COLORS[ind0] || "#555"} opacity={0.9} />
       <path d={dRight} fill={INDUSTRY_COLORS[ind1] || "#555"} opacity={0.9} />
       <line
-        x1={mid}
-        y1={y}
-        x2={mid}
-        y2={y + size}
+        x1={imx}
+        y1={iy}
+        x2={imx}
+        y2={iy + innerSize}
         stroke="#1c1917"
         strokeWidth={1}
       />
@@ -431,23 +435,23 @@ function renderSlotGridEmptyCell({
         </path>
       )}
       <text
-        x={cx - 3.5}
+        x={cx - innerSize / 4}
         y={cy + 1}
         textAnchor="middle"
         dominantBaseline="middle"
         fill="white"
-        fontSize="7"
+        fontSize="6"
         fontWeight="bold"
       >
         {INDUSTRY_LETTERS[ind0] || "?"}
       </text>
       <text
-        x={cx + 3.5}
+        x={cx + innerSize / 4}
         y={cy + 1}
         textAnchor="middle"
         dominantBaseline="middle"
         fill="white"
-        fontSize="7"
+        fontSize="6"
         fontWeight="bold"
       >
         {INDUSTRY_LETTERS[ind1] || "?"}
