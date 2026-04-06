@@ -1,9 +1,31 @@
 'use client'
 
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ROUNDS_PER_ERA } from '@/game/constants'
+import { getLocationById } from '@/game/data/locations'
 import { PLAYER_COLOR_HEX } from './boardTheme'
 import { m, useReducedMotion } from './motionConfig'
+
+function hexToRgba (hex, alpha) {
+  const n = hex.replace('#', '')
+  const v = n.length === 3 ? n.split('').map((c) => c + c).join('') : n
+  const r = parseInt(v.slice(0, 2), 16)
+  const g = parseInt(v.slice(2, 4), 16)
+  const b = parseInt(v.slice(4, 6), 16)
+  return `rgba(${r},${g},${b},${alpha})`
+}
+
+function getMyIndustryLocationIds (gameState, playerId) {
+  const set = new Set()
+  for (const t of gameState.industryTilesOnBoard || []) {
+    if (t.ownerId === playerId) set.add(t.locationId)
+  }
+  return [...set].sort((a, b) => {
+    const na = getLocationById(a)?.name ?? a
+    const nb = getLocationById(b)?.name ?? b
+    return na.localeCompare(nb)
+  })
+}
 
 function canalFullRoundsUntilRail (gameState) {
   if (gameState.era !== 'canal' || gameState.phase === 'gameOver') return null
@@ -58,10 +80,15 @@ export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan })
   const isMyTurn = currentPlayerId === playerId
   const myPlayer = gameState.players.find(p => p.id === playerId)
   const canalRoundsLeft = canalFullRoundsUntilRail(gameState)
+  const myIndustryLocationIds = useMemo(
+    () => getMyIndustryLocationIds(gameState, playerId),
+    [gameState, playerId]
+  )
+  const myColorHex = myPlayer ? (PLAYER_COLOR_HEX[myPlayer.color] || '#78716c') : null
 
   return (
     <m.div
-      className={`flex min-h-0 items-center justify-between gap-3 border-b px-3 py-2.5 shadow-sm sm:gap-4 sm:px-4 sm:py-3 ${
+      className={`relative flex min-h-0 flex-col border-b px-3 py-2.5 shadow-sm sm:px-4 sm:py-3 ${
         isMyTurn
           ? 'border-amber-600/35 bg-gradient-to-r from-amber-950/55 via-amber-900/20 to-transparent shadow-amber-950/20'
           : 'border-amber-900/20 bg-gradient-to-r from-[#1a1510] to-[#14100d]'
@@ -78,6 +105,16 @@ export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan })
       }
       transition={{ duration: 0.9, ease: 'easeOut' }}
     >
+      {myColorHex && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-0"
+          style={{
+            background: `linear-gradient(100deg, ${hexToRgba(myColorHex, 0.16)} 0%, ${hexToRgba(myColorHex, 0.06)} 28%, transparent 55%)`,
+          }}
+        />
+      )}
+      <div className="relative z-10 flex min-h-0 w-full items-center justify-between gap-3 sm:gap-4">
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 sm:gap-x-3">
         <span className="shrink-0 text-xs font-medium text-amber-100/55 sm:text-sm">
           {gameState.era === 'canal' ? 'Canal' : 'Rail'} <span className="text-amber-900/60">·</span> T{gameState.round}
@@ -223,6 +260,37 @@ export function TurnInfo ({ gameState, playerId, turnBarFlash, moneyPulseLoan })
           </div>
         )}
       </div>
+      </div>
+
+      {myColorHex && myIndustryLocationIds.length > 0 && (
+        <div className="relative z-10 mt-2 flex min-w-0 items-start gap-2 border-t border-amber-900/25 pt-2 sm:mt-2.5 sm:gap-2.5 sm:pt-2.5">
+          <span
+            className="shrink-0 pt-0.5 text-[8px] font-bold uppercase leading-none tracking-wider text-amber-200/40 sm:text-[9px]"
+            title="Locations where you have industry on the board"
+          >
+            Your cities
+          </span>
+          <div className="flex min-w-0 flex-1 flex-wrap gap-1 sm:gap-1.5">
+            {myIndustryLocationIds.map((locId) => {
+              const loc = getLocationById(locId)
+              const label = loc?.name ?? locId
+              return (
+                <span
+                  key={locId}
+                  title={label}
+                  className="max-w-[7.5rem] truncate rounded-md px-1.5 py-0.5 text-[9px] font-semibold leading-tight text-white/95 shadow-sm ring-1 ring-black/25 sm:max-w-[9rem] sm:px-2 sm:text-[10px]"
+                  style={{
+                    backgroundColor: hexToRgba(myColorHex, 0.32),
+                    border: `1px solid ${hexToRgba(myColorHex, 0.5)}`,
+                  }}
+                >
+                  {label}
+                </span>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </m.div>
   )
 }
