@@ -1070,6 +1070,18 @@ export function Board({ gameState, playerId, boardFx = null }) {
             targetingMode === "location" &&
             !isMerchant &&
             (!buildValidLocations || buildValidLocations.has(locId));
+          const isBuildWithLocationCard =
+            selectedAction === "build" &&
+            targetingMode === "location" &&
+            selectedCardObj?.type === "location";
+          const buildMapRefLocationId =
+            selectedLocationId ||
+            (isBuildWithLocationCard ? selectedCardObj.locationId : null);
+          const dimBuildLocationNode =
+            isBuildWithLocationCard &&
+            !isMerchant &&
+            buildMapRefLocationId &&
+            locId !== buildMapRefLocationId;
 
           const boardLoc = gameState.board.locations[locId];
           const merchantData = isMerchant
@@ -1138,6 +1150,7 @@ export function Board({ gameState, playerId, boardFx = null }) {
           return (
             <g
               key={locId}
+              style={{ opacity: dimBuildLocationNode ? 0.5 : 1 }}
               onClick={(e) => isTargetable && handleLocationClick(e, locId)}
               className={isTargetable ? "cursor-pointer" : ""}
             >
@@ -1753,7 +1766,7 @@ function buildValidLocationSet(
   }
 
   if (cardObj.type === "location") {
-    return new Set([cardObj.locationId]);
+    return null;
   }
 
   if (cardObj.type === "industry") {

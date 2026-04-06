@@ -187,6 +187,7 @@ export function Hand ({ cards, player, handFlash, embedded = false }) {
   const reduceMotion = useReducedMotion()
 
   const validCardIds = computeValidCardIds(selectedAction, selectedTargets, gameState, cards)
+  const buildLocationTarget = selectedTargets.find(t => t.type === 'location')
   const selectedCardObj = cards.find(c => c.id === selectedCard) || null
   const matchCardIds = computeMatchingHandCardIds({
     selectedAction,
@@ -240,7 +241,13 @@ export function Hand ({ cards, player, handFlash, embedded = false }) {
           {cards.map(card => {
             const isSelected = selectedCard === card.id
             const isValid = !validCardIds || validCardIds.has(card.id)
-            const isDisabled = validCardIds !== null && !isValid
+            const isSwitchTownLocationCard =
+              selectedAction === 'build' &&
+              buildLocationTarget &&
+              card.type === 'location' &&
+              card.locationId !== buildLocationTarget.id
+            const isDisabled =
+              validCardIds !== null && !isValid && !isSwitchTownLocationCard
             const buildSharedId =
               selectedAction === 'build' && isSelected ? 'brass-build-pending' : undefined
             const costHint = handCardCostHint(card, player, selectedAction, buildIndustry)
@@ -250,6 +257,7 @@ export function Hand ({ cards, player, handFlash, embedded = false }) {
               selectedAction !== 'scout' &&
               !isSelected &&
               !isDisabled &&
+              !isSwitchTownLocationCard &&
               matchCardIds.has(card.id)
 
             const matchRing = isMatchHint
@@ -268,7 +276,7 @@ export function Hand ({ cards, player, handFlash, embedded = false }) {
                 layoutId={buildSharedId ?? `hand-card-${card.id}`}
                 initial={reduceMotion ? false : { opacity: 0, scale: 0.92 }}
                 animate={{
-                  opacity: 1,
+                  opacity: isSelected ? 1 : isSwitchTownLocationCard ? 0.5 : 1,
                   scale: 1,
                   y: isSelected ? -4 : 0,
                 }}
@@ -278,7 +286,13 @@ export function Hand ({ cards, player, handFlash, embedded = false }) {
                   if (isDisabled) return
                   setSelectedCard(isSelected ? null : card.id)
                 }}
-                title={isDisabled ? 'Cannot use this card for the selected location' : costHint || undefined}
+                title={
+                  isDisabled
+                    ? 'Cannot use this card for the selected location'
+                    : isSwitchTownLocationCard
+                      ? 'Switch build location to this city'
+                      : costHint || undefined
+                }
                 className={`flex h-[3.75rem] min-w-[4.5rem] max-w-[9rem] flex-shrink-0 flex-col items-stretch overflow-hidden rounded-lg border px-2 py-1.5 text-left text-xs font-semibold leading-tight transition-colors${scoutRing}${matchRing} ${
                   isSelected
                     ? 'border-amber-300/70 bg-gradient-to-b from-amber-500 to-amber-900 text-white shadow-xl shadow-amber-950/50 ring-1 ring-amber-400/40'
