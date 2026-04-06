@@ -232,7 +232,7 @@ export function Hand ({ cards, player, handFlash, embedded = false }) {
         </p>
       )}
       <m.div
-        className={`flex gap-2 overflow-x-auto ${embedded ? 'min-h-[3.5rem] items-center py-0.5 [scrollbar-width:thin]' : 'pb-1'}`}
+        className={`flex gap-2 overflow-x-auto ${embedded ? 'min-h-[4.5rem] items-center py-1.5 [scrollbar-width:thin]' : 'py-1 pb-2'}`}
         animate={handFlashAnimate}
         transition={{ duration: 0.4, ease: 'easeOut' }}
       >
@@ -279,7 +279,7 @@ export function Hand ({ cards, player, handFlash, embedded = false }) {
                   setSelectedCard(isSelected ? null : card.id)
                 }}
                 title={isDisabled ? 'Cannot use this card for the selected location' : costHint || undefined}
-                className={`flex h-[3.5rem] min-w-[4.5rem] max-w-[9rem] flex-shrink-0 flex-col items-stretch overflow-hidden rounded-lg border px-2 py-1.5 text-left text-xs font-semibold leading-tight transition-colors${scoutRing}${matchRing} ${
+                className={`flex h-[3.75rem] min-w-[4.5rem] max-w-[9rem] flex-shrink-0 flex-col items-stretch overflow-hidden rounded-lg border px-2 py-1.5 text-left text-xs font-semibold leading-tight transition-colors${scoutRing}${matchRing} ${
                   isSelected
                     ? 'border-amber-300/70 bg-gradient-to-b from-amber-500 to-amber-900 text-white shadow-xl shadow-amber-950/50 ring-1 ring-amber-400/40'
                     : isDisabled
