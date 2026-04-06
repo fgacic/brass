@@ -10,6 +10,7 @@ import {
   INDUSTRY_LABEL,
   INDUSTRY_LEGEND_ORDER,
 } from "./boardTheme";
+import { animate } from "motion/react";
 import { m, useReducedMotion } from "./motionConfig";
 import { computeSlotGridGeometry } from "./boardSlotGrid";
 import { industryDefinitions } from "@/game/data/industries";
@@ -476,6 +477,7 @@ export function Board({ gameState, playerId, boardFx = null }) {
     startVb: null,
   });
   const pinchRef = useRef({ dist: 0 });
+  const cardPanAnimRef = useRef(null);
 
   const selectedLocationId =
     selectedTargets.find((t) => t.type === "location")?.id || null;
@@ -722,12 +724,46 @@ export function Board({ gameState, playerId, boardFx = null }) {
     if (!pos) return;
 
     setLocationTarget(selectedCardObj.locationId);
-    setVb((prev) => ({
-      x: pos.x - prev.w / 2,
-      y: pos.y - prev.h / 2,
-      w: prev.w,
-      h: prev.h,
-    }));
+
+    let cancelled = false;
+    cardPanAnimRef.current?.stop?.();
+    cardPanAnimRef.current = null;
+
+    setVb((prev) => {
+      const targetX = pos.x - prev.w / 2;
+      const targetY = pos.y - prev.h / 2;
+      const startX = prev.x;
+      const startY = prev.y;
+
+      if (reduceMotion) {
+        return {
+          ...prev,
+          x: targetX,
+          y: targetY,
+        };
+      }
+
+      const controls = animate(0, 1, {
+        duration: 1,
+        ease: [0.22, 1, 0.36, 1],
+        onUpdate: (t) => {
+          if (cancelled) return;
+          setVb((v) => ({
+            ...v,
+            x: startX + (targetX - startX) * t,
+            y: startY + (targetY - startY) * t,
+          }));
+        },
+      });
+      cardPanAnimRef.current = controls;
+      return prev;
+    });
+
+    return () => {
+      cancelled = true;
+      cardPanAnimRef.current?.stop?.();
+      cardPanAnimRef.current = null;
+    };
   }, [
     selectedAction,
     targetingMode,
@@ -735,6 +771,7 @@ export function Board({ gameState, playerId, boardFx = null }) {
     selectedCardObj?.locationId,
     selectedCardObj?.type,
     setLocationTarget,
+    reduceMotion,
   ]);
 
   const drawnPairs = new Set();
