@@ -1,6 +1,7 @@
 'use client'
 
 import { useGameStore } from '@/store/gameStore'
+import { useLobbyStore } from '@/store/lobbyStore'
 import { useGameStateFx } from '@/hooks/useGameStateFx'
 import { useMyTurnSound } from '@/hooks/useMyTurnSound'
 import { useRoundAdvanceOverlay } from '@/hooks/useRoundAdvanceOverlay'
@@ -18,6 +19,7 @@ import { GameMotionRoot } from './motionConfig'
 
 export function GameView ({ playerId }) {
   const { gameState } = useGameStore()
+  const isConnected = useLobbyStore((s) => s.isConnected)
   const boardFx = useGameStateFx(gameState, playerId)
   useMyTurnSound(boardFx.myTurnFlash)
   const overlayRound = useRoundAdvanceOverlay(gameState)
@@ -46,6 +48,15 @@ export function GameView ({ playerId }) {
         turnBarFlash={boardFx.myTurnFlash}
         moneyPulseLoan={boardFx.moneyPulseLoan}
       />
+
+      {!isConnected ? (
+        <div
+          role="status"
+          className="shrink-0 border-b border-amber-700/40 bg-amber-950/90 px-4 py-2 text-center font-display text-sm text-amber-100/95"
+        >
+          Connection lost — reconnecting…
+        </div>
+      ) : null}
 
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1 overflow-hidden shadow-[inset_0_0_80px_rgba(0,0,0,0.35)]">

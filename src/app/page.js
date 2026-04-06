@@ -1,21 +1,36 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSocket } from '@/hooks/useSocket'
 import { useLobbyStore } from '@/store/lobbyStore'
 import { useGameStore } from '@/store/gameStore'
+import { readBrassSession, clearBrassSession } from '@/lib/brass-session'
 import { WaitingRoom } from '@/components/lobby/WaitingRoom'
 import { GameView } from '@/components/game/GameView'
 
 const devLobbyClientEnabled = process.env.NEXT_PUBLIC_BRASS_DEV_LOBBY === '1'
 
 export default function Home () {
-  const { createRoom, joinRoom, devQuickJoin, startGame, leaveRoom } = useSocket()
+  const { createRoom, joinRoom, devQuickJoin, startGame, leaveRoom, reconnect } = useSocket()
   const { room, playerId, error, isConnected } = useLobbyStore()
   const { gameState } = useGameStore()
   const [name, setName] = useState('')
   const [joinCode, setJoinCode] = useState('')
   const [mode, setMode] = useState(null)
+  const [resumeSession, setResumeSession] = useState(null)
+  const [resumeBusy, setResumeBusy] = useState(false)
+
+  useEffect(() => {
+    if (room || gameState) {
+      setResumeSession(null)
+      return
+    }
+    setResumeSession(readBrassSession())
+  }, [room, gameState, error])
+
+  useEffect(() => {
+    if (resumeBusy && (room || error)) setResumeBusy(false)
+  }, [resumeBusy, room, error])
 
   if (gameState) {
     return <GameView playerId={playerId} />
@@ -52,6 +67,37 @@ export default function Home () {
         {error && (
           <div className="rounded-xl border border-red-500/40 bg-gradient-to-br from-red-950/80 to-red-900/30 p-3 text-center text-sm text-red-200 shadow-inner shadow-red-950/50">
             {error}
+          </div>
+        )}
+
+        {!mode && resumeSession && (
+          <div className="space-y-3 rounded-xl border border-teal-700/40 bg-teal-950/30 p-4 ring-1 ring-teal-500/15">
+            <p className="text-center text-sm font-medium text-teal-100/90">
+              Resume room <span className="font-mono tracking-wider">{resumeSession.roomCode}</span>?
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  clearBrassSession()
+                  setResumeSession(null)
+                }}
+                className="flex-1 rounded-lg border border-stone-600/50 bg-stone-900/60 py-2.5 text-sm font-semibold text-stone-200 transition hover:bg-stone-800/80 active:scale-[0.99]"
+              >
+                Forget
+              </button>
+              <button
+                type="button"
+                disabled={!isConnected || resumeBusy}
+                onClick={() => {
+                  setResumeBusy(true)
+                  reconnect(resumeSession.roomCode, resumeSession.playerId)
+                }}
+                className="flex-1 rounded-lg border border-teal-500/40 bg-gradient-to-b from-teal-700 to-teal-950 py-2.5 text-sm font-semibold text-teal-50 shadow-md transition enabled:hover:from-teal-600 enabled:hover:to-teal-900 enabled:active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {resumeBusy ? 'Reconnecting…' : 'Resume'}
+              </button>
+            </div>
           </div>
         )}
 

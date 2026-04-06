@@ -2,8 +2,25 @@
 
 import { useEffect, useCallback } from 'react'
 import { getSocket } from '@/lib/socket'
+import {
+  saveBrassSession,
+  readBrassSession,
+  clearBrassSession,
+} from '@/lib/brass-session'
 import { useLobbyStore } from '@/store/lobbyStore'
 import { useGameStore } from '@/store/gameStore'
+
+function handleReconnectResponse (response) {
+  if (response.success) {
+    useLobbyStore.getState().setRoom(response.room)
+    useLobbyStore.getState().setPlayerId(response.playerId)
+    return
+  }
+  clearBrassSession()
+  useLobbyStore.getState().reset()
+  useGameStore.getState().setGameState(null)
+  useLobbyStore.getState().setError(response.error || 'Could not restore session')
+}
 
 export function useSocket () {
   const { setRoom, setPlayerId, setError, setConnected } = useLobbyStore()
@@ -14,16 +31,43 @@ export function useSocket () {
 
     if (!socket.connected) socket.connect()
 
-    socket.on('connect', () => setConnected(true))
-    socket.on('disconnect', () => setConnected(false))
-    socket.on('room:updated', (room) => setRoom(room))
-    socket.on('game:stateUpdate', (state) => setGameState(state))
+    const onConnect = () => {
+      setConnected(true)
+      const session = readBrassSession()
+      if (!session) return
+      const lobby = useLobbyStore.getState()
+      const game = useGameStore.getState()
+      const inLobbyOrGame =
+        !!game.gameState ||
+        (!!lobby.room &&
+          lobby.playerId === session.playerId &&
+          lobby.room.code === session.roomCode)
+      if (!inLobbyOrGame) return
+      socket.emit(
+        'room:reconnect',
+        { roomCode: session.roomCode, playerId: session.playerId },
+        handleReconnectResponse
+      )
+    }
+
+    const onDisconnect = () => setConnected(false)
+    const onRoomUpdated = (room) => setRoom(room)
+    const onStateUpdate = (state) => setGameState(state)
+
+    socket.on('connect', onConnect)
+    socket.on('disconnect', onDisconnect)
+    socket.on('room:updated', onRoomUpdated)
+    socket.on('game:stateUpdate', onStateUpdate)
+
+    if (socket.connected) {
+      onConnect()
+    }
 
     return () => {
-      socket.off('connect')
-      socket.off('disconnect')
-      socket.off('room:updated')
-      socket.off('game:stateUpdate')
+      socket.off('connect', onConnect)
+      socket.off('disconnect', onDisconnect)
+      socket.off('room:updated', onRoomUpdated)
+      socket.off('game:stateUpdate', onStateUpdate)
     }
   }, [setRoom, setConnected, setGameState])
 
@@ -33,6 +77,10 @@ export function useSocket () {
       if (response.success) {
         setRoom(response.room)
         setPlayerId(response.playerId)
+        saveBrassSession({
+          roomCode: response.room.code,
+          playerId: response.playerId,
+        })
       } else {
         setError(response.error)
       }
@@ -45,6 +93,10 @@ export function useSocket () {
       if (response.success) {
         setRoom(response.room)
         setPlayerId(response.playerId)
+        saveBrassSession({
+          roomCode: response.room.code,
+          playerId: response.playerId,
+        })
       } else {
         setError(response.error)
       }
@@ -57,6 +109,10 @@ export function useSocket () {
       if (response.success) {
         setRoom(response.room)
         setPlayerId(response.playerId)
+        saveBrassSession({
+          roomCode: response.room.code,
+          playerId: response.playerId,
+        })
       } else {
         setError(response.error || 'Dev join failed')
       }
@@ -75,19 +131,24 @@ export function useSocket () {
   const leaveRoom = useCallback(() => {
     const socket = getSocket()
     socket.emit('room:leave', () => {
+      clearBrassSession()
       useLobbyStore.getState().reset()
+      useGameStore.getState().setGameState(null)
     })
   }, [])
 
   const reconnect = useCallback((roomCode, playerId) => {
     const socket = getSocket()
     socket.emit('room:reconnect', { roomCode, playerId }, (response) => {
+      handleReconnectResponse(response)
       if (response.success) {
-        setRoom(response.room)
-        setPlayerId(response.playerId)
+        saveBrassSession({
+          roomCode: response.room.code,
+          playerId: response.playerId,
+        })
       }
     })
-  }, [setRoom, setPlayerId])
+  }, [])
 
   return { createRoom, joinRoom, devQuickJoin, startGame, leaveRoom, reconnect }
 }

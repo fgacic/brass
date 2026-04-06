@@ -49,6 +49,14 @@ Dependencies are managed with **Yarn** (`yarn.lock`). Open `http://localhost:300
 
 **Ngrok (optional):** run `npx ngrok config add-authtoken YOUR_TOKEN` once (token from [ngrok dashboard](https://dashboard.ngrok.com/get-started/your-authtoken)), or set `NGROK_AUTHTOKEN` in `.env.local` (gitignored). Then `yarn dev:ngrok` or `yarn start:ngrok`. Do not commit secrets.
 
+## Reconnect and refresh
+
+After you **create or join** a room (including dev quick join), the client stores `roomCode` and `playerId` in **`sessionStorage`** under the key **`brass_session`**. When you return to the **home** screen with a saved session (e.g. after a refresh) and you are not already in a room or game, a **Resume** prompt appears with the room code; choose **Resume** to emit **`room:reconnect`** or **Forget** to clear the session. While you are already in the **waiting room** or an **active game**, a Socket.IO **`connect`** (including after a transient disconnect) still runs **`room:reconnect`** automatically so your socket is re-mapped and, if applicable, you receive a fresh **`game:stateUpdate`**.
+
+**Leaving** a room clears that entry and resets lobby + game state on the client. If **`room:reconnect`** fails (room gone, player removed, etc.), the session is cleared, lobby and game state are reset, and an error is shown.
+
+During an active game, if the socket disconnects, the in-game UI shows a short **“Connection lost — reconnecting…”** banner until the connection is back.
+
 **Hand cards:** each card can show the **next tile on your mat** cost line (`Hand.js`): **£, coal, and iron** for build context (beer on tile defs is for **sell**/flip, not build, so it is omitted unless **Sell** is selected). Location / wild location cards show the same once **Build** is active and an industry is chosen in the action panel (`buildIndustry` in `gameStore`). Choosing a **location** (town/city) card while **Build** + location targeting is active sets that location as the map target and pans the SVG view to center it (`setLocationTarget` in `gameStore.js`, effect in `Board.js`). **Cross-highlights:** sky ring on hand cards that match the current build industry / map location / develop mat picks / sell tile industries; rose ring + “With scout” on the two auto-discarded companions when a scout card is chosen (`Hand.js`). **Action panel** uses a sky ring on build / develop / sell controls that match the selected industry card (`ActionPanel.js`). **Board** narrows buildable cities from `buildIndustry` when no card is selected yet, or with wild cards (`buildValidLocationSet` + `buildIndustry` in `Board.js`). Develop / sell working state lives in `gameStore` (`developIndustries`, `sellTiles`) so the hand can read it.
 
 ## How to Play
